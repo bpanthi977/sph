@@ -1,0 +1,54 @@
+[
+  {
+    "arguments": [
+      "/usr/bin/g++",
+      "--std=c++11",
+      "-c",
+      "-o",
+      "out/main.o",
+      "main.cpp"
+    ],
+    "directory": "/Users/bpanthi977/Development/sph",
+    "file": "/Users/bpanthi977/Development/sph/main.cpp",
+    "output": "/Users/bpanthi977/Development/sph/out/main.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/g++",
+      "--std=c++11",
+      "-c",
+      "-o",
+      "out/grid.o",
+      "grid.cpp"
+    ],
+    "directory": "/Users/bpanthi977/Development/sph",
+    "file": "/Users/bpanthi977/Development/sph/grid.cpp",
+    "output": "/Users/bpanthi977/Development/sph/out/grid.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/g++",
+      "--std=c++11",
+      "-c",
+      "-o",
+      "out/kernel.o",
+      "kernel.cpp"
+    ],
+    "directory": "/Users/bpanthi977/Development/sph",
+    "file": "/Users/bpanthi977/Development/sph/kernel.cpp",
+    "output": "/Users/bpanthi977/Development/sph/out/kernel.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/g++",
+      "--std=c++11",
+      "-c",
+      "-o",
+      "out/vec2.o",
+      "vec2.cpp"
+    ],
+    "directory": "/Users/bpanthi977/Development/sph",
+    "file": "/Users/bpanthi977/Development/sph/vec2.cpp",
+    "output": "/Users/bpanthi977/Development/sph/out/vec2.o"
+  }
+]

@@ -1,6 +1,5 @@
 #include "vec2.h"
 #include "types.h"
-#include <cstddef>
 #include <iostream>
 
 GridId grid_id(vec2 pos) {
@@ -19,7 +18,7 @@ bool grid_id_zero(GridId &g) {
 }
 
 int grid_id_hash(GridId &id, int size) {
-  int hash = (id.x * 73856093 + id.y * 19349663) % size;
+  int hash = (abs(id.x) * 73856093 + abs(id.y) * 19349663) % size;
   return hash;
 }
 
@@ -121,6 +120,7 @@ void NeighbourIterator::start() {
 }
 
 bool NeighbourIterator::has_next() {
+  if (grid_iter_i == 9) return false;
   if (particle_iter == particle_iter_end) {
     return find_next_grid();
   }

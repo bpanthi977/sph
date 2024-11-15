@@ -1,5 +1,6 @@
 (require :sdl2)
 (require :float-features)
+(require :fast-io)
 
 (defconstant +h+ 1/24 "Kernel Support Radius")
 (defconstant +d+ (/ +h+ 1.2d0) "Particle spacing")
@@ -13,7 +14,7 @@
 
 (defmethod print-object ((o particle) stream)
   (with-slots (x y pressure) o
-    (format stream "#S(PARTICLE (~,3f, ~,4f) :pressure ~,3f)"
+    (format stream "#S(PARTICLE (~,2e, ~,2e) :pressure ~,2e)"
             x y pressure)))
 
 (defun draw-circle (renderer cx cy r)
@@ -44,9 +45,9 @@
   (flet ((transform-x (x)
            ;; x is in m
            ;; take 500 pixels = 1m
-           (truncate (+ 100 (* 250 x))))
+           (truncate (+ 200 (* 250 x))))
          (transform-y (y)
-           (truncate (- 550 (* 250 y)))))
+           (truncate (- 200 (* 250 y)))))
 
     (loop for p across particles
           with max-pressure = (max 1 (reduce #'max particles :key #'particle-pressure :initial-value 0))
@@ -61,31 +62,85 @@
 
             (draw-circle renderer (transform-x x) (transform-y y) r))))
 
-(defun load-simulation-results0 ()
-  (with-open-file (stream "out/results.data"
-                          :direction :input
-                          :element-type '(unsigned-byte 32))
-    (flet ((read-uint32 ()
-             (read-byte stream))
-           (read-double ()
-             (float-features:bits-double-float (read-byte stream))))
-      (let* ((count (read-uint32))
-             (particles (make-array count
-                                    :element-type '(or null particle)
-                                    :initial-element nil)))
-        (loop for i from 0 below count do
-          (setf (aref particles i) (make-particle :x (read-double)
-                                                  :y (read-double)
-                                                  :pressure (read-double))))
+(defclass simulation ()
+  ((io-buffer :initarg :io-buffer)
+   (header-end-position)
+   (little-endian-p :initarg :little-endian-p)
+   (ended :initform nil :accessor ended)
+   (particles :accessor particles)
+   (frame-number :accessor frame-number :initform 0)))
 
-        particles))))
+(defmethod read-u8 ((s simulation))
+  (with-slots (io-buffer) s
+    (case (fast-io:readu8 io-buffer)
+      (1 T)
+      (0 nil))))
 
-(defun load-simulation-results ()
-  (restart-case (load-simulation-results0)
-    (retry ()
-      (load-simulation-results))
-    (ignore ()
-      #())))
+(defmethod read-u32 ((s simulation))
+  (with-slots (little-endian-p io-buffer) s
+      (if little-endian-p
+          (fast-io:read32-le io-buffer)
+          (fast-io:read32-be io-buffer))))
+
+(defmethod read-double ((s simulation))
+  (declare (optimize (debug 3)))
+  (with-slots (little-endian-p io-buffer) s
+      (float-features:bits-double-float
+                (if little-endian-p
+                    (fast-io:readu64-le io-buffer)
+                    (fast-io:readu64-be io-buffer)))))
+
+(defun open-simulation-file (filename)
+  (let* ((stream (open filename :direction :input
+                                :element-type '(unsigned-byte 8)))
+         (io-buffer (fast-io:make-input-buffer :stream stream))
+         (little-endian-p (case (fast-io:readu8 io-buffer)
+                            (1 T)
+                            (0 nil)))
+         (sim (make-instance 'simulation :io-buffer io-buffer :little-endian-p little-endian-p)))
+
+    (let* ((count (read-u32 sim))
+           (particles (make-array count
+                                  :element-type '(or null particle)
+                                  :initial-element nil)))
+      (setf (slot-value sim 'header-end-position) (file-position stream))
+      (loop for i from 0 below count do
+        (setf (aref particles i) (make-particle :x 0.0d0
+                                                :y 0.0d0
+                                                :pressure 0.0d0)))
+      (setf (particles sim) particles)
+      sim)))
+
+(defmethod reset-simulation ((s simulation))
+  (with-slots (io-buffer header-end-position) s
+    (file-position (fast-io:input-buffer-stream io-buffer)
+                   header-end-position)
+    (setf (ended s) nil)
+    (setf (frame-number s) 0)))
+
+(defmethod read-frame ((s simulation))
+  (if (ended s)
+      nil
+      (let ((has-next-frame (read-u8 s)))
+        (if has-next-frame
+            (progn
+              (loop for p across (particles s) do
+                (setf (particle-x p) (read-double s)
+                      (particle-y p) (read-double s)
+                      (particle-pressure p) (read-double s)))
+              (incf (frame-number s)))
+            (setf (ended s) t))
+        (not (ended s)))))
+
+(defmethod close-simulation ((s simulation))
+  (with-slots (io-buffer) s
+    (close (fast-io:input-buffer-stream io-buffer))))
+
+(defmacro with-simulation-file ((filename simulation) &body body)
+  `(let ((,simulation (open-simulation-file ,filename)))
+     (unwind-protect (progn ,@body)
+       (close-simulation ,simulation))))
+
 
 (defun main ()
   (sdl2:with-init (:everything)
@@ -94,7 +149,8 @@
                            :title "Physics simulation"
                            :flags (list sdl2-ffi:+sdl-window-resizable+))
       (sdl2:with-renderer (renderer win)
-        (let ((particles (load-simulation-results)))
+        (with-simulation-file ("./out/results.data" sim)
+          (read-frame sim)
           (sdl2:with-event-loop ()
             (:quit () t)
             (:window
@@ -107,14 +163,17 @@
                (case scancode
                  (#.(list sdl2-ffi:+sdl-scancode-escape+ sdl2-ffi:+sdl-scancode-q+)
                   (sdl2:push-event :quit))
+                 (#.sdl2-ffi:+sdl-scancode-space+
+                  (read-frame sim))
                  (#.sdl2-ffi:+sdl-scancode-r+
-                  (setf particles (load-simulation-results))))))
+                  (reset-simulation sim)
+                  (read-frame sim)))))
             (:idle
              ()
              ;; Clear screen
              (sdl2:set-render-draw-color renderer 255 255 255 255)
              (sdl2:render-clear renderer)
              ;; Draw objects
-             (draw renderer particles)
+             (draw renderer (particles sim))
              ;; Update screnn
              (sdl2:render-present renderer))))))))

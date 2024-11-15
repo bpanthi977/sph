@@ -1,9 +1,8 @@
 #include <_types/_uint32_t.h>
-#include <cmath>
 #include <fstream>
 #include <ios>
 #include <iostream>
-#include <unordered_map>
+#include <arpa/inet.h>
 #include <vector>
 #include "vec2.h"
 #include "types.h"
@@ -30,26 +29,22 @@ void compute_density(World *w) {
 
 void physics_update(World *w, double dt) {
   w->grid.build();
-
   compute_density(w);
 }
 
-void save_state(World *w, std::string filename) {
-  std::ofstream file(filename, std::ios::binary);
-  if (!file) {
-    std::cerr << "Couldn't opern file to save state  file: " << filename << std::endl;
-    exit(1);
-  }
+void setup_initial_mass(World *world) {
+  // Compute initial mass
+  for (auto& p: world->particles) {
+    NeighbourIterator it = world->grid.get_neighbours(p);
+    double sumW = 0.0;
+    it.start();
+    while (it.has_next()) {
+      Particle *np = it.next();
+      sumW += W(distance(p.pos, np->pos));
+    }
 
-  uint32_t count = w->particles.size();
-  file.write(reinterpret_cast<const char*>(&count), sizeof(uint32_t));
-
-  for (auto& p: w->particles) {
-    file.write(reinterpret_cast<char *>(&p.pos.x), sizeof(double));
-    file.write(reinterpret_cast<char *>(&p.pos.y), sizeof(double));
-    file.write(reinterpret_cast<char *>(&p.pressure), sizeof(double));
+    p.mass = 1000.0 / sumW;
   }
-  file.close();
 }
 
 World *initialize_world() {
@@ -76,29 +71,41 @@ World *initialize_world() {
 
   World *world = new World(*particles);
   world->grid.build();
-
-  // Compute initial mass
-  for (auto& p: world->particles) {
-    NeighbourIterator it = world->grid.get_neighbours(p);
-    double sumW = 0.0;
-    it.start();
-    while (it.has_next()) {
-      Particle *np = it.next();
-      sumW += W(distance(p.pos, np->pos));
-    }
-
-    p.mass = 1000.0 / sumW;
-  }
+  setup_initial_mass(world);
 
   return world;
 }
 
+World *initialize_world2() {
+  std::vector<Particle> particles = parse_input_file("input.txt");
+  World *world = new World(particles);
+  world->grid.build();
+  setup_initial_mass(world);
+  return world;
+}
+
 int main(void) {
-  World *world = initialize_world();
+  /// Initialization
+  // initialize world
+  World *world = initialize_world2();
+  // open output file
+  std::string filename = "out/results.data";
+  std::ofstream file(filename, std::ios::binary);
+  if (!file) {
+    std::cerr << "Couldn't opern file to save state  file: " << filename << std::endl;
+    exit(1);
+  }
+  world->write_headers(file);
 
-  physics_update(world, 0.01);
+  for (int i=0; i<2; i++) {
+    // Run simulation
+    physics_update(world, 0.01);
+    world->write_frame(file);
+  }
 
-  save_state(world, "out/results.data");
+  /// End
+  world->write_footers(file);
+  file.close();
 
   return 0;
 }

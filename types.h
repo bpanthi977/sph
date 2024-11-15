@@ -10,9 +10,9 @@ typedef struct {
   vec2 pos;
   vec2 vel;
   double mass;
+
   double rho;
   double pressure;
-
   double aii;
   double si;
   double ai[2];
@@ -78,6 +78,11 @@ class World {
   Grid grid;
 
   World(std::vector<Particle> particles);
+  void write_headers(std::ofstream &file);
+  void write_frame(std::ofstream &file);
+  void write_footers(std::ofstream &file);
 };
+
+std::vector<Particle> parse_input_file(std::string filename);
 
 #endif

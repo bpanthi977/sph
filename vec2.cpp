@@ -6,6 +6,11 @@ vec2 operator+(vec2 p1, vec2 p2) {
   return result;
 }
 
+void operator+=(vec2& self, const vec2& other) {
+  self.x += other.x;
+  self.y += other.y;
+}
+
 vec2 operator-(vec2 p1, vec2 p2) {
   vec2 result = {.x = p1.x - p2.x , .y = p1.y - p2.y};
   return result;
@@ -13,6 +18,11 @@ vec2 operator-(vec2 p1, vec2 p2) {
 
 vec2 operator*(vec2 p1, vec2 p2) {
   vec2 result = {.x = p1.x * p2.x , .y = p1.y * p2.y};
+  return result;
+}
+
+vec2 operator*(vec2 p1, double scalar) {
+  vec2 result = {.x = p1.x * scalar, .y = p1.y * scalar};
   return result;
 }
 

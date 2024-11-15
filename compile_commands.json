@@ -2,7 +2,7 @@
   {
     "arguments": [
       "/usr/bin/g++",
-      "--std=c++11",
+      "--std=c++20",
       "-c",
       "-o",
       "out/main.o",
@@ -15,7 +15,7 @@
   {
     "arguments": [
       "/usr/bin/g++",
-      "--std=c++11",
+      "--std=c++20",
       "-c",
       "-o",
       "out/grid.o",
@@ -28,7 +28,7 @@
   {
     "arguments": [
       "/usr/bin/g++",
-      "--std=c++11",
+      "--std=c++20",
       "-c",
       "-o",
       "out/kernel.o",
@@ -41,7 +41,7 @@
   {
     "arguments": [
       "/usr/bin/g++",
-      "--std=c++11",
+      "--std=c++20",
       "-c",
       "-o",
       "out/vec2.o",

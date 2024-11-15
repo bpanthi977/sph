@@ -9,7 +9,7 @@ World::World(std::vector<Particle> _particles) : grid(particles) {
 void World::write_headers(std::ofstream &file) {
   // Write endianness
   uint8_t flags = (std::endian::native == std::endian::little) ? 1 : 0;
-  printf("Littel Endian = %d\n", flags);
+  printf("Little Endian = %d\n", flags);
   file.write(reinterpret_cast<const char *>(&flags), sizeof(uint8_t));
 
   // Count of particles

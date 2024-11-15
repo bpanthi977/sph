@@ -47,47 +47,22 @@ void setup_initial_mass(World *world) {
   }
 }
 
-World *initialize_world() {
-  std::vector<Particle> *particles = new std::vector<Particle>();
-
-  // Create particles at initial position
-  for (double x = 2 * SPACING; x < 0.6; x += SPACING) {
-    for (double y = 2 * SPACING; y < 2.0; y+= SPACING) {
-      particles->push_back(make_particle(x / 1000, y));
-    }
-  }
-
-  for (double x = 0; x < 3.1; x += SPACING) {
-      particles->push_back(make_particle(x, 0));
-      particles->push_back(make_particle(x, SPACING));
-  }
-
-  for (double y = 2 * SPACING; y < 2.0; y += SPACING) {
-    particles->push_back(make_particle(0, y));
-    particles->push_back(make_particle(SPACING, y));
-    particles->push_back(make_particle(3, y));
-    particles->push_back(make_particle(3 - SPACING, y));
-  }
-
-  World *world = new World(*particles);
-  world->grid.build();
-  setup_initial_mass(world);
-
-  return world;
-}
-
-World *initialize_world2() {
-  std::vector<Particle> particles = parse_input_file("input.txt");
+World *initialize_world(std::string filename) {
+  std::vector<Particle> particles = parse_input_file(filename);
   World *world = new World(particles);
   world->grid.build();
   setup_initial_mass(world);
   return world;
 }
 
-int main(void) {
+int main(int argc, char** argv) {
   /// Initialization
   // initialize world
-  World *world = initialize_world2();
+  std::string input_filename = "input2.txt";
+  if (argc >= 2) {
+    input_filename = argv[1];
+  }
+  World *world = initialize_world(input_filename);
   // open output file
   std::string filename = "out/results.data";
   std::ofstream file(filename, std::ios::binary);

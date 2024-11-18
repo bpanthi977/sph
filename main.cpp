@@ -24,19 +24,6 @@ void compute_density(World *w) {
   }
 }
 
-vec2 viscous_acceleration(World *w, Particle &p) {
-  vec2 acc = {0, 0};
-  return acc;
-}
-
-vec2 external_acceleration(World *w, Particle &p) {
-  vec2 acc = {0, 0};
-  if (!p.boundary_particle) {
-    acc.y = -9.81; // Gravity
-  }
-  return acc;
-}
-
 void physics_update(World *w, double dt) {
   w->grid.build();
   compute_density(w);
@@ -44,7 +31,7 @@ void physics_update(World *w, double dt) {
   // Compute forces
   //  due to external forces and viscous forces
   for (Particle &p: w->particles) {
-    p.vel += (viscous_acceleration(w, p) + external_acceleration(w, p)) * dt;
+    p.vel += (w->viscous_acceleration(p) + w->external_acceleration(p)) * dt;
   }
 
   // Compute pressure force & add to velociy

@@ -6,6 +6,19 @@ World::World(std::vector<Particle> _particles) : grid(particles) {
   particles = _particles;
 }
 
+vec2 World::viscous_acceleration(Particle &p) {
+  vec2 acc = {0, 0};
+  return acc;
+}
+
+vec2 World::external_acceleration(Particle &p) {
+  vec2 acc = {0, 0};
+  if (!p.boundary_particle) {
+    acc.y = -9.81; // Gravity
+  }
+  return acc;
+}
+
 void World::write_headers(std::ofstream &file) {
   // Write endianness
   uint8_t flags = (std::endian::native == std::endian::little) ? 1 : 0;

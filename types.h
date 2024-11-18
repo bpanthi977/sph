@@ -98,6 +98,11 @@ class World {
   Grid grid;
 
   World(std::vector<Particle> particles);
+
+  vec2 viscous_acceleration(Particle &p);
+  vec2 external_acceleration(Particle &p);
+
+  // Save to file
   void write_headers(std::ofstream &file);
   void write_frame(std::ofstream &file);
   void write_footers(std::ofstream &file);

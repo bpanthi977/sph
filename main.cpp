@@ -18,10 +18,7 @@ Particle make_particle(double x, double y) {
 void compute_density(World *w) {
   for (auto& p: w->particles) {
     p.rho = 0.0;
-    NeighbourIterator it = w->grid.get_neighbours(p);
-    it.start();
-    while (it.has_next()) {
-      Particle *np = it.next();
+    for (Particle *np: w->grid.get_neighbours(&p)) {
       p.rho += np->mass * W(distance(p.pos, np->pos));
     }
   }
@@ -64,11 +61,8 @@ void physics_update(World *w, double dt) {
 void setup_initial_mass(World *world) {
   // Compute initial mass
   for (auto& p: world->particles) {
-    NeighbourIterator it = world->grid.get_neighbours(p);
     double sumW = 0.0;
-    it.start();
-    while (it.has_next()) {
-      Particle *np = it.next();
+    for (Particle *np: world->grid.get_neighbours(&p)) {
       sumW += W(distance(p.pos, np->pos));
     }
 

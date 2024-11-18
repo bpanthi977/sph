@@ -76,14 +76,31 @@ void Grid::build() {
   }
 }
 
-NeighbourIterator Grid::get_neighbours(Particle& p) {
-  return NeighbourIterator(*this, p);
+Neighbours Grid::get_neighbours(Particle *p) {
+  return Neighbours(this, p);
 }
 
-NeighbourIterator::NeighbourIterator(Grid& g, Particle& p) {
-  grid = &g;
-  particle = &p;
-  particle_grid_id = grid_id(p.pos);
+Neighbours::Neighbours(Grid *g, Particle *p) {
+  grid = g;
+  particle = p;
+}
+
+NeighbourIterator Neighbours::begin() {
+  return NeighbourIterator(grid, particle, false);
+};
+
+NeighbourIterator Neighbours::end() {
+  return NeighbourIterator(grid, particle, true);
+}
+
+NeighbourIterator::NeighbourIterator(Grid* g, Particle* p, bool _is_end) {
+  grid = g;
+  particle = p;
+  is_end = _is_end;
+
+  particle_grid_id = grid_id(p->pos);
+  grid_iter_i = -1;
+  find_next_grid();
 }
 
 const GridId grid_neigbour_idx_offsets[9] = {{-1, -1}, {0, -1}, {1, -1},
@@ -114,22 +131,26 @@ bool NeighbourIterator::find_next_grid() {
   return true;
 }
 
-void NeighbourIterator::start() {
-  grid_iter_i = -1;
-  find_next_grid();
-}
-
-bool NeighbourIterator::has_next() {
-  if (grid_iter_i == 9) return false;
-  if (particle_iter == particle_iter_end) {
-    return find_next_grid();
+NeighbourIterator& NeighbourIterator::operator++() {
+  if (grid_iter_i == 9) {
+     // No next particle
+  } else {
+    ++particle_iter;
+    if (particle_iter == particle_iter_end)
+      find_next_grid();
   }
-
-  return true;
+  return *this;
 }
 
-Particle* NeighbourIterator::next() {
-  Particle* particle = *particle_iter;
-  ++particle_iter;
-  return particle;
+Particle* NeighbourIterator::operator*() {
+  return *particle_iter;
+}
+
+
+bool NeighbourIterator::operator==(const NeighbourIterator& other) const {
+  return other.is_end && grid_iter_i == 9;
+}
+
+bool NeighbourIterator::operator!=(const NeighbourIterator& other) const {
+  return !(*this == other);
 }

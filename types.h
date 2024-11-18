@@ -33,7 +33,7 @@ typedef struct {
   std::vector<Particle*> particles;
 } GridBox;
 
-class NeighbourIterator;
+class Neighbours;
 
 class GridHashMap {
   GridBox *grid_hash_map;
@@ -53,24 +53,44 @@ class Grid {
  public:
   Grid(std::vector<Particle> &particles);
   void build();
-  NeighbourIterator get_neighbours(Particle& p);
+  Neighbours get_neighbours(Particle *p);
 };
 
-class NeighbourIterator {
+class NeighbourIterator{
   Grid *grid;
   Particle *particle;
+
   GridId particle_grid_id;
   int grid_iter_i; // 0 to 8 representing neighbouring cells
+  // iterators inside the grid
   std::vector<Particle*>::const_iterator particle_iter;
   std::vector<Particle*>::const_iterator particle_iter_end;
 
+  bool is_end;
   bool find_next_grid();
- public:
-  NeighbourIterator(Grid& g, Particle &p);
-  bool has_next();
-  Particle *next();
-  void start();
+public:
+  NeighbourIterator(Grid *g, Particle *p, bool is_end);
+  // Equality comparison (with end)
+  bool operator==(const NeighbourIterator& other) const;
+  // Inequality comparision (with end)
+  bool operator!=(const NeighbourIterator& other) const;
+  // Pre-increment operator
+  NeighbourIterator& operator++();
+  // Dereference
+  Particle* operator*();
 };
+
+class Neighbours {
+  Grid *grid;
+  Particle *particle;
+public:
+
+  Neighbours(Grid *g, Particle *p);
+  NeighbourIterator begin();
+  NeighbourIterator end();
+};
+
+
 
 class World {
   public:

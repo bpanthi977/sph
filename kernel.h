@@ -4,5 +4,5 @@
 double W(double r);
 double dW_dr(double r);
 vec2 gradW(vec2 p1, vec2 p2);
-
+double gradW_norm(vec2 p1, vec2 p2);
 #endif

@@ -2,8 +2,14 @@
 CC=g++ -g --std=c++20 -c
 
 OFILES=out/world.o out/grid.o out/kernel.o out/vec2.o out/parse_input.o out/iisph.o out/physics.o
+CFILES=world.cpp grid.cpp kernel.cpp vec2.cpp parse_input.cpp iisph.cpp physics.cpp main.cpp
+
 out/main: out/main.o out/world.o out/grid.o out/kernel.o out/vec2.o out/parse_input.o out/iisph.o out/physics.o
 	g++ --std=c++20 out/main.o $(OFILES) -o out/main
+
+
+final: $(CFILES)
+	g++ --std=c++20 -O3 $(CFILES) -o out/main
 
 test: out/world.o out/grid.o out/kernel.o out/vec2.o out/parse_input.o out/test.o
 	g++ out/test.o $(OFILES) -o out/test

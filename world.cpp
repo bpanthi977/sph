@@ -1,9 +1,12 @@
 #include "types.h"
+#include "kernel.h"
 #include <cstdint>
 #include <fstream>
 
-World::World(std::vector<Particle> _particles) : grid(particles) {
+World::World(std::vector<Particle> _particles, Algorithm _alg) {
   particles = _particles;
+  alg = _alg;
+  grid = new Grid(&particles);
 }
 
 vec2 World::viscous_acceleration(Particle &p) {

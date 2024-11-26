@@ -4,16 +4,14 @@
 #include "vec2.h"
 #include <vector>
 
-typedef struct {
+typedef struct Particle {
+  int idx;
+  char symbol;
   vec2 pos;
   vec2 vel;
   double mass;
 
   double rho;
-  double pressure;
-  double aii;
-  double si;
-  double ai[2];
   bool boundary_particle;
 } Particle;
 
@@ -52,7 +50,7 @@ class Grid {
   friend class NeighbourIterator;
 
  public:
-  Grid(std::vector<Particle> &particles);
+  Grid(std::vector<Particle> *particles);
   void build();
   Neighbours get_neighbours(Particle *p);
 };
@@ -91,14 +89,22 @@ public:
   NeighbourIterator end();
 };
 
+class World;
 
+struct Algorithm {
+  void (*initialize)(World* w);
+  double (*physics_update)(World *w);
+};
 
 class World {
-  public:
+public:
+  double rho_0 = 1000.0;
+  double time = 0.0;
   std::vector<Particle> particles;
-  Grid grid;
+  Grid *grid;
+  Algorithm alg;
 
-  World(std::vector<Particle> particles);
+  World(std::vector<Particle> particles, Algorithm alg);
 
   vec2 viscous_acceleration(Particle &p);
   vec2 external_acceleration(Particle &p);
@@ -107,7 +113,11 @@ class World {
   void write_headers(std::ofstream &file);
   void write_frame(std::ofstream &file);
   void write_footers(std::ofstream &file);
+
+  // Debugging
+  void sanity_checks();
 };
+
 
 std::vector<Particle> parse_input_file(std::string filename);
 

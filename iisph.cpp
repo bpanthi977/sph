@@ -6,7 +6,13 @@
 #include "physics.h"
 
 double iisph_compute_time_step(World *w) {
-  return 0.002;
+  double max_vel_sq = 0.0;
+  for (Particle &p: w->particles) {
+    max_vel_sq = std::max(max_vel_sq, norm_square(p.vel));
+  }
+  double cfl_delta = max_vel_sq == 0.0 ? 1: 0.2 * SUPPORT_RADIUS / sqrt(max_vel_sq);
+  w->log("cfl_delta", cfl_delta);
+  return std::min(0.005, cfl_delta);
 };
 
 double *iisph_compute_pressure(double dt, World *w) {

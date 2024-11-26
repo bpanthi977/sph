@@ -1,10 +1,10 @@
-#include "physics.h"
 #include "types.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
 #include <iostream>
 #include <fstream>
+#include <memory>
 #include <vector>
 
 using std::istream;
@@ -77,23 +77,23 @@ void render_to_terminal(World *w) {
   int x_size = std::ceil((bounds_max.x - bounds_min.x) / SPACING) + 1;
   int y_size = std::ceil((bounds_max.y - bounds_min.y) / SPACING) + 1;
   int total_size = x_size * y_size;
-  char render_buffer[y_size + 1][x_size + 1];
+  std::unique_ptr<char[]> render_buffer(new char[total_size]);
 
   for (int i=0; i < total_size; i++) {
-    *((char *)render_buffer + i) = ' ';
+    render_buffer[i] = ' ';
   }
 
   for (Particle& p: w->particles) {
     int x = std::ceil((p.pos.x - bounds_min.x) / SPACING);
     int y = std::ceil((bounds_max.y - p.pos.y) / SPACING);
-    render_buffer[y][x] = p.symbol;
+    render_buffer[y * x_size + x] = p.symbol;
   }
 
   printf("\033[2J"); // Clear the screen
   printf("\033[H");  // Move the cursor to the top-left corner
   for (int y = 0; y < y_size; y++) {
     for (int x = 0; x < x_size; x++) {
-      printf("%c", render_buffer[y][x]);
+      printf("%c", render_buffer[y * x_size + x]);
     }
     printf("\n");
   }

@@ -3,6 +3,7 @@
 #include <cassert>
 #include <cmath>
 #include <cstdlib>
+#include <memory>
 #include "physics.h"
 
 double iisph_compute_time_step(World *w) {
@@ -16,7 +17,7 @@ double iisph_compute_time_step(World *w) {
   return dt;
 };
 
-double *iisph_compute_pressure(double dt, World *w) {
+std::unique_ptr<double[]> iisph_compute_pressure(double dt, World *w) {
   // Use Jacobi iteration to solve a weighted average pressure poission equation
   //   To correct density deviation
   //       ∇²p = (ρ₀ - ρ*) / dt^2
@@ -31,7 +32,7 @@ double *iisph_compute_pressure(double dt, World *w) {
 
   // Compute a_ii
   // particles with aii = 0 are excluded from computation
-  double aii[w->particles.size()];
+  std::unique_ptr<double[]> aii(new double[w->particles.size()]);
   for (Particle& p: w->particles) {
     if (p.boundary_particle) {
       aii[p.idx] = 0;
@@ -62,7 +63,7 @@ double *iisph_compute_pressure(double dt, World *w) {
   }
 
   // Compute s_i
-  double s[w->particles.size()];
+  std::unique_ptr<double[]> s(new double[w->particles.size()]);
   double alpha = 0.01;
   for (Particle& p: w->particles) {
     if (!aii[p.idx]) continue;
@@ -73,7 +74,7 @@ double *iisph_compute_pressure(double dt, World *w) {
   }
 
   // Initialize P_i = 0
-  double *P = new double[w->particles.size()];
+  std::unique_ptr<double[]> P(new double[w->particles.size()]);
   for (int i = 0; i < w->particles.size(); i++) {
     P[i] = 0;
   }
@@ -85,7 +86,7 @@ double *iisph_compute_pressure(double dt, World *w) {
   // until average Ap - s is within tolerance
 
   // Initialize pressure acceleration
-  vec2 acc[w->particles.size()];
+  std::unique_ptr<vec2[]> acc(new vec2[w->particles.size()]);
   int n_fluid = 0;
   for (Particle &p: w->particles) {
     if (!aii[p.idx]) {
@@ -106,7 +107,7 @@ double *iisph_compute_pressure(double dt, World *w) {
     // Compute pressure acceleration (i.e. acc = -∇p/ρ)
     for (Particle &p : w->particles) {
       if (!aii[p.idx]) continue;
-      acc[p.idx] = pressure_acceleration(w, &p, P);
+      acc[p.idx] = pressure_acceleration(w, &p, P.get());
     }
 
     for (Particle& p: w->particles) {
@@ -159,7 +160,7 @@ double iisph_physics_update(World *w) {
 
   // Compute pressure forces
   w->timer_start("Compute Pressure");
-  double *P = iisph_compute_pressure(dt, w);
+  std::unique_ptr<double[]> P = iisph_compute_pressure(dt, w);
   w->timer_end("Compute Pressure");
 
   w->timer_start("Apply forces");
@@ -167,7 +168,7 @@ double iisph_physics_update(World *w) {
   // Dv/Dt = -1/ρ ∇p
   for (Particle& p: w->particles) {
     if (!p.boundary_particle) {
-      p.vel += dt * pressure_acceleration(w, &p, P);
+      p.vel += dt * pressure_acceleration(w, &p, P.get());
     }
   }
 

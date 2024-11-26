@@ -13,12 +13,9 @@ bool grid_id_equal(GridId &g1, GridId &g2) {
   return g1.x == g2.x && g1.y == g2.y;
 }
 
-bool grid_id_zero(GridId &g) {
-  return g.x == 0 && g.y == 0;
-}
-
-int grid_id_hash(GridId &id, int size) {
-  int hash = (abs(id.x) * 73856093 + abs(id.y) * 19349663) % size;
+int grid_id_hash(GridId &id, uint64_t size) {
+  uint64_t hash = ((uint64_t) abs(id.x) * 73856093 + (uint64_t) abs(id.y) * 19349663) %  size;
+  assert(hash >= 0);
   return hash;
 }
 

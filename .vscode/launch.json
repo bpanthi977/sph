@@ -6,7 +6,7 @@
         "type": "lldb",
         "request": "launch",
         "program": "${workspaceFolder}/out/main",
-        "args": [],
+        "args": ["scenes/wells.txt"],
         "stopAtEntry": false,
         "cwd": "${workspaceFolder}",
         "environment": [],

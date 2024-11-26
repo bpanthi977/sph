@@ -62,11 +62,11 @@ double *iisph_compute_pressure(double dt, World *w) {
 
   // Compute s_i
   double s[w->particles.size()];
-  double alpha = 0.004;
+  double alpha = 0.01;
   for (Particle& p: w->particles) {
     if (!aii[p.idx]) continue;
     double density_prediction = p.rho + dt * density_derivative(w, &p);
-    double density_correction = alpha * (w->rho_0 - density_prediction);
+    double density_correction = alpha * std::min(0.0, (w->rho_0 - density_prediction));
     double velocity_correction =  dt * w->rho_0 * velocity_divergence(w, &p);
     s[p.idx] = density_correction + velocity_correction;
   }

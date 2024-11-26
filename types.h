@@ -120,5 +120,7 @@ public:
 
 
 std::vector<Particle> parse_input_file(std::string filename);
+void render_to_terminal(World *w);
+
 
 #endif

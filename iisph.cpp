@@ -132,9 +132,12 @@ double *iisph_compute_pressure(double dt, World *w) {
 
 double iisph_physics_update(World *w) {
   // Update neighbours
+  w->timer_start("Build Grid");
   w->grid->build();
+  w->timer_end("Build Grid");
 
   // Compute density
+  w->timer_start("Non pressure");
   for (Particle& p: w->particles) {
     p.rho = compute_density(w, &p);
   }
@@ -149,10 +152,14 @@ double iisph_physics_update(World *w) {
       p.vel += dt * (w->viscous_acceleration(p) + w->external_acceleration(p));
     }
   }
+  w->timer_end("Non pressure");
 
   // Compute pressure forces
+  w->timer_start("Compute Pressure");
   double *P = iisph_compute_pressure(dt, w);
+  w->timer_end("Compute Pressure");
 
+  w->timer_start("Apply forces");
   // Apply pressure acceleration
   // Dv/Dt = -1/ρ ∇p
   for (Particle& p: w->particles) {
@@ -167,6 +174,7 @@ double iisph_physics_update(World *w) {
       p.pos += dt * p.vel;
     }
   }
+  w->timer_end("Apply forces");
 
   return dt;
 }

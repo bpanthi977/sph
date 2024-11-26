@@ -2,7 +2,10 @@
 #define __SPH_TYPES
 
 #include "vec2.h"
-#include <utility>
+#include <chrono>
+#include <cstdint>
+#include <tuple>
+#include <unordered_map>
 #include <vector>
 
 typedef struct Particle {
@@ -97,7 +100,26 @@ struct Algorithm {
   double (*physics_update)(World *w);
 };
 
+class Timing {
+private:
+  int current;
+  uint64_t sum_x;
+  uint64_t sum_x2;
+  int count;
+  std::chrono::high_resolution_clock::time_point start_point;
+  bool started;
+  void add(uint64_t value);
+public:
+  Timing();
+  uint64_t get_current();
+  double get_std();
+  double get_mean();
+  void start();
+  void end();
+};
+
 class World {
+
 public:
   double rho_0 = 1000.0;
   double time = 0.0;
@@ -105,6 +127,7 @@ public:
   Grid *grid;
   Algorithm alg;
   std::vector<std::pair<std::string, double>> logs;
+  std::unordered_map<std::string, Timing> timings;
 
   World(std::vector<Particle> particles, Algorithm alg);
 
@@ -114,6 +137,8 @@ public:
 
   // Logging
   void log(std::string param, double value);
+  void timer_start(std::string name);
+  void timer_end(std::string name);
 
   // Save to file
   void write_headers(std::ofstream &file);

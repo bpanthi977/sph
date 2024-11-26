@@ -1,10 +1,60 @@
 #include "types.h"
 #include "kernel.h"
+#include <algorithm>
 #include <cassert>
 #include <cmath>
 #include <cstdint>
 #include <fstream>
+#include <iostream>
 #include <utility>
+#include <chrono>
+
+Timing::Timing() {
+  current = 0;
+  sum_x = 0;
+  sum_x2 = 0;
+  count = 0;
+  started = false;
+}
+
+void Timing::add(uint64_t value) {
+  current = value;
+  sum_x += value;
+  sum_x2 += value * value;
+  count ++;
+}
+
+void Timing::start() {
+  start_point = std::chrono::high_resolution_clock::now();
+  started = true;
+}
+
+void Timing::end() {
+  if (!started) {
+    std::cerr << "Timer not started! " << std::endl;
+    exit(1);
+  }
+  auto end_point = std::chrono::high_resolution_clock::now();
+  auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_point - start_point);
+  add(duration.count());
+  started = false;
+}
+
+uint64_t Timing::get_current() {
+  return current;
+}
+
+double Timing::get_mean() {
+  if (count == 0) return 0.0;
+  return (double) sum_x / count;
+}
+
+double Timing::get_std() {
+  if (count == 0) return 0.0;
+
+  double mean = ((double)sum_x / count);
+  return std::sqrt((double)sum_x2 / count - mean * mean);
+}
 
 World::World(std::vector<Particle> _particles, Algorithm _alg) {
   particles = _particles;
@@ -13,6 +63,24 @@ World::World(std::vector<Particle> _particles, Algorithm _alg) {
   logs = std::vector<std::pair<std::string, double>>();
 }
 
+void World::timer_start(std::string name) {
+  if (timings.contains(name)) {
+    timings[name].start();
+  } else {
+    Timing t;
+    timings[name] = t;
+    timings[name].start();
+  }
+}
+
+void World::timer_end(std::string name) {
+  if (timings.contains(name)) {
+    timings[name].end();
+  } else {
+    std::cerr << "Timer hasn't been created for " << name << std::endl;
+    exit(1);
+  }
+}
 
 vec2 World::viscous_acceleration(Particle &p) {
   vec2 acc = {0, 0};
@@ -29,7 +97,9 @@ vec2 World::external_acceleration(Particle &p) {
 
 void World::physics_update() {
   logs.clear();
+  timer_start("Physics");
   time += alg.physics_update(this);
+  timer_end("Physics");
 }
 
 void World::log(std::string param, double value) {

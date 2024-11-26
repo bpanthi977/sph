@@ -1,6 +1,4 @@
 #include "types.h"
-#include "kernel.h"
-#include <algorithm>
 #include <cassert>
 #include <cmath>
 #include <cstdint>

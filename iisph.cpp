@@ -11,8 +11,9 @@ double iisph_compute_time_step(World *w) {
     max_vel_sq = std::max(max_vel_sq, norm_square(p.vel));
   }
   double cfl_delta = max_vel_sq == 0.0 ? 1: 0.2 * SUPPORT_RADIUS / sqrt(max_vel_sq);
-  w->log("cfl_delta", cfl_delta);
-  return std::min(0.005, cfl_delta);
+  double dt = std::min(0.005, cfl_delta);
+  w->log("dt", dt);
+  return dt;
 };
 
 double *iisph_compute_pressure(double dt, World *w) {
@@ -137,11 +138,13 @@ double iisph_physics_update(World *w) {
   w->timer_end("Build Grid");
 
   // Compute density
-  w->timer_start("Non pressure");
+  w->timer_start("Compute Density");
   for (Particle& p: w->particles) {
     p.rho = compute_density(w, &p);
   }
+  w->timer_end("Compute Density");
 
+  w->timer_start("dt,F_nonp");
   // Compute timestep
   double dt = iisph_compute_time_step(w);
 
@@ -152,7 +155,7 @@ double iisph_physics_update(World *w) {
       p.vel += dt * (w->viscous_acceleration(p) + w->external_acceleration(p));
     }
   }
-  w->timer_end("Non pressure");
+  w->timer_end("dt,F_nonp");
 
   // Compute pressure forces
   w->timer_start("Compute Pressure");

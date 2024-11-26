@@ -2,6 +2,7 @@
 #define __SPH_TYPES
 
 #include "vec2.h"
+#include <utility>
 #include <vector>
 
 typedef struct Particle {
@@ -103,12 +104,16 @@ public:
   std::vector<Particle> particles;
   Grid *grid;
   Algorithm alg;
+  std::vector<std::pair<std::string, double>> logs;
 
   World(std::vector<Particle> particles, Algorithm alg);
 
   vec2 viscous_acceleration(Particle &p);
   vec2 external_acceleration(Particle &p);
   void physics_update();
+
+  // Logging
+  void log(std::string param, double value);
 
   // Save to file
   void write_headers(std::ofstream &file);

@@ -4,11 +4,13 @@
 #include <cmath>
 #include <cstdint>
 #include <fstream>
+#include <utility>
 
 World::World(std::vector<Particle> _particles, Algorithm _alg) {
   particles = _particles;
   alg = _alg;
   grid = new Grid(&particles);
+  logs = std::vector<std::pair<std::string, double>>();
 }
 
 
@@ -26,7 +28,12 @@ vec2 World::external_acceleration(Particle &p) {
 }
 
 void World::physics_update() {
+  logs.clear();
   time += alg.physics_update(this);
+}
+
+void World::log(std::string param, double value) {
+  logs.push_back(std::pair(param, value));
 }
 
 uint8_t SIM_LITTLE_ENDIAN = 0b00001;

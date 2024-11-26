@@ -2,6 +2,7 @@
 #include "types.h"
 #include <algorithm>
 #include <cmath>
+#include <cstdio>
 #include <iostream>
 #include <fstream>
 #include <vector>
@@ -96,4 +97,9 @@ void render_to_terminal(World *w) {
     }
     printf("\n");
   }
+
+  for (auto log: w->logs) {
+    printf("[%s %f] ", log.first.c_str(), log.second);
+  }
+  printf("\n");
 }

@@ -1,21 +1,24 @@
 #include "vec2.h"
 #include "types.h"
+#include <cassert>
 
 // Kernel Function
 double cubic_spline_2d(double r) {
   const double normalization = 40.0 / (7.0 * PI * std::pow(SUPPORT_RADIUS, 2));
   float q = r / SUPPORT_RADIUS;
 
-  if (0 <= q && q <= 1)
+  if (0 <= q && q <= 0.5)
     return normalization * (1 - 6 * q * q * (1 - q));
-  else if (1 <= q && q <= 2)
+  else if (0.5 <= q && q <= 1)
     return normalization * 2 * std::pow(1-q, 3);
 
   return 0.0;
 }
 
 double W(double r) {
-  return cubic_spline_2d(r);
+  double w = cubic_spline_2d(r);
+  assert(w >= 0);
+  return w;
 }
 
 // First derivative of Kernel function W(r)

@@ -4,8 +4,8 @@
 
 GridId grid_id(vec2 pos) {
   GridId result;
-  result.x = fmod(pos.x, 2 * SUPPORT_RADIUS);
-  result.y = fmod(pos.y, 2 * SUPPORT_RADIUS);
+  result.x = floor(pos.x / (2 * SUPPORT_RADIUS));
+  result.y = floor(pos.y / (2 * SUPPORT_RADIUS));
   return result;
 }
 

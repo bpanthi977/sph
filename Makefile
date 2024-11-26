@@ -1,4 +1,4 @@
-.PHONY: run clean test
+.PHONY: run clean test final
 CC=g++ -g --std=c++20 -c
 
 OFILES=out/world.o out/grid.o out/kernel.o out/vec2.o out/parse_input.o out/iisph.o out/physics.o

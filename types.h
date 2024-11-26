@@ -28,9 +28,12 @@ typedef struct {
   int y;
 } GridId;
 
-typedef struct {
+typedef struct GridBox {
   GridId grid_id;
   std::vector<Particle*> particles;
+  bool used;
+
+  GridBox(): grid_id({0}), particles(std::vector<Particle*>()), used(false) {}
 } GridBox;
 
 class Neighbours;

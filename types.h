@@ -2,8 +2,6 @@
 #define __SPH_TYPES
 
 #include "vec2.h"
-#include <map>
-#include <unordered_map>
 #include <vector>
 
 typedef struct {

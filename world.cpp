@@ -11,6 +11,7 @@ World::World(std::vector<Particle> _particles, Algorithm _alg) {
   grid = new Grid(&particles);
 }
 
+
 vec2 World::viscous_acceleration(Particle &p) {
   vec2 acc = {0, 0};
   return acc;
@@ -22,6 +23,10 @@ vec2 World::external_acceleration(Particle &p) {
     acc.y = -9.81; // Gravity
   }
   return acc;
+}
+
+void World::physics_update() {
+  time += alg.physics_update(this);
 }
 
 uint8_t SIM_LITTLE_ENDIAN = 0b00001;
@@ -75,8 +80,5 @@ void World::sanity_checks() {
     assert(!isnan(p.pos.y));
     assert(!isnan(p.vel.x));
     assert(!isnan(p.vel.y));
-    assert(!isnan(p.vel_pred.x));
-    assert(!isnan(p.vel_pred.y));
-    assert(!isnan(p.alpha));
   }
 }

@@ -107,35 +107,47 @@
          (fast-io:readu32-le io-buffer)
          (fast-io:readu32-be io-buffer)))))
 
-(defun open-simulation-file (filename)
-  (let* ((stream (open filename :direction :input
-                                :element-type '(unsigned-byte 8)))
-         (io-buffer (fast-io:make-input-buffer :stream stream))
+(defun read-file-octets (filename)
+  (with-open-file (stream filename :direction :input
+                                :element-type '(unsigned-byte 8))
+    (let ((arr (make-array
+                0 :element-type '(unsigned-byte 8)
+                 :fill-pointer t
+                 :adjustable t)))
+      (loop for byte = (read-byte stream nil nil)
+            while byte
+            do (vector-push-extend byte arr))
+      (let ((arr2 (make-array (length arr) :element-type '(unsigned-byte 8))))
+        (replace arr2 arr)
+        arr2))))
+
+(defun open-simulation-file (filename &optional buffer)
+  (let* ((io-buffer (or buffer (fast-io:make-input-buffer :vector (read-file-octets filename))))
          (flags (fast-io:readu8 io-buffer))
          (little-endian-p (case (logand +sim-little-endian+ flags)
                             (1 T)
                             (0 nil)))
          (sim (make-instance 'simulation :io-buffer io-buffer :little-endian-p little-endian-p :flags flags)))
-
     (let* ((count (read-u32 sim))
            (particles (make-array count
                                   :element-type '(or null particle)
                                   :initial-element nil)))
-      (setf (slot-value sim 'header-end-position) (file-position stream))
       (loop for i from 0 below count do
         (setf (aref particles i) (make-particle :x 0.0
                                                 :y 0.0
                                                 :mass (if (= 0 (logand +sim-mass+ flags))
                                                           0.0
                                                           (read-single sim)))))
+      (setf (slot-value sim 'header-end-position) (fast-io::input-buffer-pos io-buffer))
+
       (print flags)
       (setf (particles sim) particles)
       sim)))
 
 (defmethod reset-simulation ((s simulation))
   (with-slots (io-buffer header-end-position) s
-    (file-position (fast-io:input-buffer-stream io-buffer)
-                   header-end-position)
+    (setf (fast-io::input-buffer-pos io-buffer)
+          header-end-position)
     (setf (ended s) nil)
     (setf (frame-number s) 0)))
 
@@ -156,9 +168,7 @@
             (setf (ended s) t))
         (not (ended s)))))
 
-(defmethod close-simulation ((s simulation))
-  (with-slots (io-buffer) s
-    (close (fast-io:input-buffer-stream io-buffer))))
+(defmethod close-simulation ((s simulation)) )
 
 (defmacro with-simulation-file ((filename simulation) &body body)
   `(let ((,simulation (open-simulation-file ,filename)))
@@ -248,6 +258,10 @@
                    (#.sdl2-ffi:+sdl-scancode-r+
                     (close-simulation sim)
                     (setf sim (open-simulation-file file))
+                    (setf render-time-start (get-internal-real-time))
+                    (read-frame sim))
+                   (#.sdl2-ffi:+sdl-scancode-l+
+                    (reset-simulation sim)
                     (setf render-time-start (get-internal-real-time))
                     (read-frame sim))
                    (#.sdl2-ffi:+sdl-scancode-up+

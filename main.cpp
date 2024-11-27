@@ -37,6 +37,8 @@ typedef struct {
   std::string output_filename;
   int iters;
   double target_time;
+  bool data_file_out;
+  bool terminal_render;
 } Params;
 
 std::string get_arg(std::vector<std::string> args, std::string param) {
@@ -49,6 +51,11 @@ std::string get_arg(std::vector<std::string> args, std::string param) {
   }
 }
 
+bool find_arg(std::vector<std::string> args, std::string param) {
+   auto loc = std::find(args.begin() + 1, args.end(), param);
+   return loc < args.end();
+}
+
 void print_help() {
   using namespace std;
 
@@ -58,6 +65,8 @@ void print_help() {
   cout << "--time   Target time for simulation" << endl;
   cout << "--iters  Target iterations of physics update (default 200)" << endl;
   cout << "           Not used if --time is provided" << endl;
+  cout << "--no-render Disable rendering to terminal" << endl;
+  cout << "--no-output Don't save results to file" << endl;
   cout << "--help   Prints this help message." << endl;
 }
 
@@ -102,6 +111,17 @@ Params parse_args(int argc, char** argv) {
     params.iters = 200;
   }
 
+  if (find_arg(args, "--no-render")) {
+    params.terminal_render = false;
+  } else {
+    params.terminal_render = true;
+  }
+
+  if (find_arg(args, "--no-output")) {
+    params.data_file_out = false;
+  } else {
+    params.data_file_out = true;
+  }
   return params;
 }
 
@@ -112,12 +132,15 @@ int main(int argc, char** argv) {
   World *world = initialize_world(params.input_filename);
 
   // Open output file
-  std::ofstream file(params.output_filename, std::ios::binary);
-  if (!file) {
-    std::cerr << "Couldn't opern file to save state  file: " << params.output_filename << std::endl;
-    exit(1);
+  std::ofstream file;
+  if (params.data_file_out) {
+    file.open(params.output_filename, std::ios::binary);
+    if (!file) {
+      std::cerr << "Couldn't opern file to save state  file: " << params.output_filename << std::endl;
+      exit(1);
+    }
+    world->write_headers(file);
   }
-  world->write_headers(file);
 
   // Run simulation
   int iters = 0;
@@ -126,13 +149,13 @@ int main(int argc, char** argv) {
     iters++;
     world->physics_update();
 
-    render_to_terminal(world);
+    if (params.terminal_render) render_to_terminal(world);
     printf("[Iters: %d/%d] [Time: %.4fs/%.2f]\n", iters, params.iters, world->time, params.target_time);
 
-    world->write_frame(file);
+    if (params.data_file_out) world->write_frame(file);
   }
   // Close output file
-  world->write_footers(file);
+  if (params.data_file_out) world->write_footers(file);
   file.close();
   return 0;
 }

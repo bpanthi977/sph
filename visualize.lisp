@@ -17,6 +17,7 @@
   (y 0.0 :type short-float)
   (vx 0.0 :type short-float)
   (vy 0.0 :type short-float)
+  (boundary-p nil :type boolean)
   (mass 0.0 :type short-float)
   (pressure 0.0 :type short-float))
 
@@ -117,18 +118,21 @@
           with r = (truncate (* *scale* 1/2 +d+))
           for x = (particle-x p)
           for y = (particle-y p) do
-            (funcall set-color
-                     (floor (* 255 (min 1 (/ (particle-pressure p)
-                                             max-pressure))))
-                     0 255)
+            (if (particle-boundary-p p)
+                (funcall set-color 0 0 0)
+                (funcall set-color
+                         (floor (* 255 (min 1 (/ (particle-pressure p)
+                                                 max-pressure))))
+                         0 255))
           #+nil(draw-circle draw-point (transform-x x) (transform-y y) r)
           #+nil(draw-filled-circle draw-point (truncate (transform-x x)) (truncate (transform-y y)) r)
                  (draw-filled-rect draw-point (truncate (transform-x x)) (truncate (transform-y y)) r))))
 
 (defconstant +SIM-LITTLE-ENDIAN+     #b00001)
 (defconstant +SIM-MASS+              #b00010)
-(defconstant +SIM-PRESSURE+          #b00100)
-(defconstant +SIM-VELOCITY+          #b01000)
+(defconstant +SIM-BOUNDARY+          #b00100)
+(defconstant +SIM-PRESSURE+          #b01000)
+(defconstant +SIM-VELOCITY+          #b10000)
 
 (defclass simulation ()
   ((io-buffer :initarg :io-buffer)
@@ -191,6 +195,11 @@
                                                 :mass (if (= 0 (logand +sim-mass+ flags))
                                                           0.0
                                                           (read-single sim)))))
+      (unless (= 0 (logand +sim-boundary+ flags))
+        (loop for p across particles do
+              (when (= 1 (fast-io:readu8 io-buffer))
+                (setf (particle-boundary-p p) t))))
+
       (setf (slot-value sim 'header-end-position) (fast-io::input-buffer-pos io-buffer))
 
       (print flags)

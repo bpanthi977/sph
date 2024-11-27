@@ -107,20 +107,26 @@ void World::log(std::string param, double value) {
 
 uint8_t SIM_LITTLE_ENDIAN = 0b00001;
 uint8_t SIM_MASS          = 0b00010;
-uint8_t SIM_PRESSURE      = 0b00100;
-uint8_t SIM_VELOCITY      = 0b01000;
+uint8_t SIM_BOUNDARY      = 0b00100;
+uint8_t SIM_PRESSURE      = 0b01000;
+uint8_t SIM_VELOCITY      = 0b10000;
 
 void write_single(std::ofstream &file, float s) {
   file.write(reinterpret_cast<char *>(&s), sizeof(float));
 }
 
+void write_byte(std::ofstream &file, uint8_t byte) {
+  file.write(reinterpret_cast<const char *>(&byte), sizeof(uint8_t));
+}
+
+
 void World::write_headers(std::ofstream &file) {
   // Write endianness
   uint8_t little_endian = (std::endian::native == std::endian::little) ? SIM_LITTLE_ENDIAN : 0;
-  uint8_t flags = little_endian | SIM_MASS;
+  uint8_t flags = little_endian | SIM_MASS | SIM_BOUNDARY;
 
   printf("Flags = %d\n", flags);
-  file.write(reinterpret_cast<const char *>(&flags), sizeof(uint8_t));
+  write_byte(file, flags);
 
   // Count of particles
   uint32_t count = particles.size();
@@ -130,6 +136,11 @@ void World::write_headers(std::ofstream &file) {
   // Mass of particles
   for (Particle& p: particles) {
     write_single(file, p.mass);
+  }
+
+  // Boundary or Not
+  for (Particle& p: particles) {
+    write_byte(file, p.boundary_particle);
   }
 }
 

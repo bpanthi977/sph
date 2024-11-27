@@ -170,12 +170,20 @@ int main(int argc, char** argv) {
     iters++;
     world->physics_update();
 
-    if (params.terminal_render) render_to_terminal(world);
+    if (params.terminal_render) {
+      world->timer_start("Render");
+      render_to_terminal(world);
+      world->timer_end("Render");
+    }
 
     std::chrono::duration duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_point);
     printf("[Iters: %d/%d] [Time: %.4fs/%.2f] [Wall Time: %.4fs]\n", iters, params.iters, world->time, params.target_time, (double) duration.count() / 1000);
 
-    if (params.data_file_out) world->write_frame(file);
+    if (params.data_file_out) {
+      world->timer_start("Save Frame");
+      world->write_frame(file);
+      world->timer_start("Save Frame");
+    }
   }
   // Close output file
   if (params.data_file_out) world->write_footers(file);

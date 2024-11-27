@@ -108,7 +108,8 @@ std::unique_ptr<double[]> iisph_compute_pressure(double dt, World *w) {
 
   double omega = 0.5; // Relaxed Jacobi iteration
   double error;
-  double tolerance = n_fluid * 0.001 * w->rho_0; // 0.1% of for ρ₀
+  double alpha = 0.01;
+  double tolerance = alpha * n_fluid * 0.001 * w->rho_0; // 0.1% of ρ₀
   int iters = 0;
   do {
     error = 0.0;
@@ -120,7 +121,7 @@ std::unique_ptr<double[]> iisph_compute_pressure(double dt, World *w) {
       acc[p.idx] = pressure_acceleration(w, &p, P.get());
     }
 
-    #pragma omp parallel for
+    #pragma omp parallel for reduction(+: error)
     for (Particle& p: w->particles) {
       if (!aii[p.idx]) continue;
       // Compute (∇²p)ᵢ = -∇(ρ acc)
@@ -138,7 +139,11 @@ std::unique_ptr<double[]> iisph_compute_pressure(double dt, World *w) {
     }
 
     //printf("[%d] %f >= %f\n", iters, error, tolerance);
-  } while (error >= tolerance && iters <= 20);
+  } while (error >= tolerance && iters <= 100);
+  w->log("PPE Iters", iters);
+  w->log("PPE Error", error);
+  w->log("PPE Active", n_fluid);
+
 
   return P;
 }

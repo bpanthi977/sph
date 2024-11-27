@@ -210,7 +210,7 @@
       (sdl-render win renderer sim)
       (gl-render win gl sim)))
 
-(defun main ()
+(defun main (&optional (file "./out/results.data"))
   (sdl2:with-init (:everything)
     ;; Initialize Graphics
     (sdl2:with-window (win :w 1000 :h 600
@@ -219,7 +219,7 @@
       (sdl2:with-gl-context (gl win)
         ;;(sdl2:with-renderer (renderer win)
         (sdl2:gl-make-current win gl)
-        (with-simulation-file ("./out/results.data" sim)
+        (with-simulation-file (file sim)
           (let ((render-time-start (get-internal-real-time))
                 (last-frame nil)
                 (auto-play nil))
@@ -247,7 +247,7 @@
                                                      (* internal-time-units-per-second (world-time sim)))))))
                    (#.sdl2-ffi:+sdl-scancode-r+
                     (close-simulation sim)
-                    (setf sim (open-simulation-file "./out/results.data"))
+                    (setf sim (open-simulation-file file))
                     (setf render-time-start (get-internal-real-time))
                     (read-frame sim))
                    (#.sdl2-ffi:+sdl-scancode-up+

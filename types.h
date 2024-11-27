@@ -94,9 +94,11 @@ public:
 
 class World;
 
-struct Algorithm {
-  void (*initialize)(World* w);
-  double (*physics_update)(World *w);
+class Algorithm {
+public:
+  virtual double *get_pressure() = 0;
+  virtual void initialize(World *w) = 0;
+  virtual double physics_update() = 0;
 };
 
 class Timing {
@@ -124,11 +126,11 @@ public:
   double time = 0.0;
   std::vector<Particle> particles;
   Grid *grid;
-  Algorithm alg;
+  Algorithm *alg;
   std::vector<std::pair<std::string, double>> logs;
   std::unordered_map<std::string, Timing> timings;
 
-  World(std::vector<Particle> particles, Algorithm alg);
+  World(std::vector<Particle> particles, Algorithm *alg);
 
   vec2 viscous_acceleration(Particle &p);
   vec2 external_acceleration(Particle &p);

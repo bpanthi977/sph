@@ -55,7 +55,7 @@ double Timing::get_std() {
   return std::sqrt((double)sum_x2 / count - mean * mean);
 }
 
-World::World(std::vector<Particle> _particles, Algorithm _alg) {
+World::World(std::vector<Particle> _particles, Algorithm *_alg) {
   particles = _particles;
   alg = _alg;
   grid = new Grid(&particles);
@@ -97,7 +97,7 @@ vec2 World::external_acceleration(Particle &p) {
 void World::physics_update() {
   logs.clear();
   timer_start("Physics");
-  time += alg.physics_update(this);
+  time += alg->physics_update();
   timer_end("Physics");
 }
 

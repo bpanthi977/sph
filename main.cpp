@@ -24,12 +24,13 @@ void setup_initial_mass(World *world) {
 
 World *initialize_world(std::string filename, int parsing_scale) {
   std::vector<Particle> particles = parse_input_file(filename, parsing_scale);
-  World *w = new World(particles, IISPH());
+  IISPH *algorithm = new IISPH();
+  World *w = new World(particles, algorithm);
   printf("World loaded [%zu particles]\n", w->particles.size());
 
   w->grid->build();
   setup_initial_mass(w);
-  w->alg.initialize(w);
+  w->alg->initialize(w);
   return w;
 }
 

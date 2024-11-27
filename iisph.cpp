@@ -5,6 +5,7 @@
 #include <cstdlib>
 #include <memory>
 #include "physics.h"
+#include "iisph.h"
 
 double iisph_compute_time_step(World *w) {
   double max_vel_sq = 0.0;
@@ -18,7 +19,7 @@ double iisph_compute_time_step(World *w) {
   return dt;
 };
 
-std::unique_ptr<double[]> iisph_compute_pressure(double dt, World *w) {
+void iisph_compute_pressure(double dt, World *w, double *P) {
   // Use Jacobi iteration to solve a weighted average pressure poission equation
   //   To correct density deviation
   //       ∇²p = (ρ₀ - ρ*) / dt^2
@@ -35,7 +36,6 @@ std::unique_ptr<double[]> iisph_compute_pressure(double dt, World *w) {
   // particles with aii = 0 are excluded from computation
   std::unique_ptr<double[]> aii(new double[w->particles.size()]);
   std::unique_ptr<double[]> s(new double[w->particles.size()]);
-  std::unique_ptr<double[]> P(new double[w->particles.size()]);
 
 #pragma omp parallel
   {
@@ -118,7 +118,7 @@ std::unique_ptr<double[]> iisph_compute_pressure(double dt, World *w) {
     #pragma omp parallel for
     for (Particle &p : w->particles) {
       if (!aii[p.idx]) continue;
-      acc[p.idx] = pressure_acceleration(w, &p, P.get());
+      acc[p.idx] = pressure_acceleration(w, &p, P);
     }
 
     #pragma omp parallel for reduction(+: error)
@@ -143,12 +143,13 @@ std::unique_ptr<double[]> iisph_compute_pressure(double dt, World *w) {
   w->log("PPE Iters", iters);
   w->log("PPE Error", error);
   w->log("PPE Active", n_fluid);
-
-
-  return P;
 }
 
-double iisph_physics_update(World *w) {
+double *IISPH::get_pressure() {
+  return pressure;
+}
+
+double IISPH::physics_update() {
   // Update neighbours
   w->timer_start("Build Grid");
   w->grid->build();
@@ -178,7 +179,7 @@ double iisph_physics_update(World *w) {
 
   // Compute pressure forces
   w->timer_start("Compute Pressure");
-  std::unique_ptr<double[]> P = iisph_compute_pressure(dt, w);
+  iisph_compute_pressure(dt, w, pressure);
   w->timer_end("Compute Pressure");
 
   w->timer_start("Apply forces");
@@ -187,7 +188,7 @@ double iisph_physics_update(World *w) {
   #pragma omp parallel for
   for (Particle& p: w->particles) {
     if (!p.boundary_particle) {
-      p.vel += dt * pressure_acceleration(w, &p, P.get());
+      p.vel += dt * pressure_acceleration(w, &p, pressure);
     }
   }
 
@@ -203,13 +204,8 @@ double iisph_physics_update(World *w) {
   return dt;
 }
 
-void iisph_initialize(World *w) {
 
-}
-
-
-
-Algorithm IISPH() {
-  Algorithm alg = {iisph_initialize, iisph_physics_update};
-  return alg;
+void IISPH::initialize(World *_w) {
+  w = _w;
+  pressure = new double[w->particles.size()];
 }

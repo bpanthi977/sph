@@ -1,4 +1,5 @@
 #include <cassert>
+#include <chrono>
 #include <fstream>
 #include <algorithm>
 #include <iostream>
@@ -127,11 +128,11 @@ Params parse_args(int argc, char** argv) {
 }
 
 int main(int argc, char** argv) {
+  std::chrono::time_point start_point = std::chrono::high_resolution_clock::now();
   // Read args
   Params params = parse_args(argc, argv);
   // Initialize
   World *world = initialize_world(params.input_filename);
-
   // Open output file
   std::ofstream file;
   if (params.data_file_out) {
@@ -151,7 +152,9 @@ int main(int argc, char** argv) {
     world->physics_update();
 
     if (params.terminal_render) render_to_terminal(world);
-    printf("[Iters: %d/%d] [Time: %.4fs/%.2f]\n", iters, params.iters, world->time, params.target_time);
+
+    std::chrono::duration duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_point);
+    printf("[Iters: %d/%d] [Time: %.4fs/%.2f] [Wall Time: %.4fs]\n", iters, params.iters, world->time, params.target_time, (double) duration.count() / 1000);
 
     if (params.data_file_out) world->write_frame(file);
   }

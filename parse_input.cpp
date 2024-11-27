@@ -9,7 +9,7 @@
 
 using std::istream;
 
-std::vector<Particle> parse_input_file(std::string filename) {
+std::vector<Particle> parse_input_file(std::string filename, int scale) {
   std::ifstream file(filename);
   char ch;
   std::vector<Particle> particles;
@@ -30,32 +30,40 @@ std::vector<Particle> parse_input_file(std::string filename) {
     if (ch == ' ' || ch == '\n') {
       // Ignore spaces
     } else if (firstline || IS_BOUNDARY_CHAR) {
-      Particle p = {0};
-      p.symbol = ch;
-      p.idx = particles.size();
-      p.pos = {x, y};
-      p.vel = {0, 0};
-      p.boundary_particle = true;
-      particles.push_back(p);
-      if (firstline && !(IS_BOUNDARY_CHAR)) {
-        boundary_chars.push_back(ch);
+      for (int ix=0; ix<scale; ix++) {
+        for (int iy=0; iy<scale; iy++) {
+          Particle p = {0};
+          p.symbol = ch;
+          p.idx = particles.size();
+          p.pos = {x + SPACING * ix, y + SPACING * iy};
+          p.vel = {0, 0};
+          p.boundary_particle = true;
+          particles.push_back(p);
+          if (firstline && !(IS_BOUNDARY_CHAR)) {
+            boundary_chars.push_back(ch);
+          }
+        }
       }
     } else {
-      Particle p = {0};
-      p.symbol = ch;
-      p.idx = particles.size();
-      p.pos = {x, y};
-      p.vel = {0, 0};
-      p.boundary_particle = false;
-      particles.push_back(p);
+      for (int ix=0; ix < scale; ix++) {
+        for (int iy=0; iy < scale; iy++) {
+          Particle p = {0};
+          p.symbol = ch;
+          p.idx = particles.size();
+          p.pos = {x + SPACING * ix, y + SPACING * iy};
+          p.vel = {0, 0};
+          p.boundary_particle = false;
+          particles.push_back(p);
+        }
+      }
     }
 
     if (ch == '\n') {
       firstline = false;
-      y = y - SPACING;
+      y = y - SPACING * scale;
       x = 0;
     } else {
-      x = x + SPACING;
+      x = x + SPACING * scale;
     }
   }
 

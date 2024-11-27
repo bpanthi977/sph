@@ -149,7 +149,7 @@ public:
 };
 
 
-std::vector<Particle> parse_input_file(std::string filename);
+std::vector<Particle> parse_input_file(std::string filename, int parsing_scale);
 void render_to_terminal(World *w);
 
 

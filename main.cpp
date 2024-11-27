@@ -22,8 +22,8 @@ void setup_initial_mass(World *world) {
   }
 }
 
-World *initialize_world(std::string filename) {
-  std::vector<Particle> particles = parse_input_file(filename);
+World *initialize_world(std::string filename, int parsing_scale) {
+  std::vector<Particle> particles = parse_input_file(filename, parsing_scale);
   World *w = new World(particles, IISPH());
   printf("World loaded [%zu particles]\n", w->particles.size());
 
@@ -41,6 +41,7 @@ typedef struct {
   double target_time;
   bool data_file_out;
   bool terminal_render;
+  int parsing_scale;
 } Params;
 
 std::string get_arg(std::vector<std::string> args, std::string param) {
@@ -63,12 +64,13 @@ void print_help() {
 
   cout << "SPH Fuild Simulator" << endl;
   cout << "simulator <input_filename> [optional parameters]" << endl << endl;
-  cout << "--output Path to simulation result ouptut file" << endl;
-  cout << "--time   Target time for simulation" << endl;
-  cout << "--iters  Target iterations of physics update (default 200)" << endl;
-  cout << "           Not used if --time is provided" << endl;
+  cout << "--output    Path to simulation result ouptut file" << endl;
+  cout << "--time      Target time for simulation" << endl;
+  cout << "--iters     Target iterations of physics update (default 200)" << endl;
+  cout << "             Not used if --time is provided" << endl;
   cout << "--no-render Disable rendering to terminal" << endl;
   cout << "--no-output Don't save results to file" << endl;
+  cout << "--scale     Scale to use for Input file" << endl;
   cout << "--help   Prints this help message." << endl;
 }
 
@@ -113,6 +115,13 @@ Params parse_args(int argc, char** argv) {
     params.iters = 200;
   }
 
+  std::string scale_str = get_arg(args, "--scale");
+  if (scale_str == "") {
+    params.parsing_scale = 1;
+  } else {
+    params.parsing_scale = std::max(1, std::stoi(scale_str));
+  }
+
   if (find_arg(args, "--no-render")) {
     params.terminal_render = false;
   } else {
@@ -124,6 +133,7 @@ Params parse_args(int argc, char** argv) {
   } else {
     params.data_file_out = true;
   }
+
   return params;
 }
 
@@ -132,7 +142,7 @@ int main(int argc, char** argv) {
   // Read args
   Params params = parse_args(argc, argv);
   // Initialize
-  World *world = initialize_world(params.input_filename);
+  World *world = initialize_world(params.input_filename, params.parsing_scale);
   // Open output file
   std::ofstream file;
   if (params.data_file_out) {

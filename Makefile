@@ -1,5 +1,5 @@
 .PHONY: run clean test final
-GCC=/opt/homebrew/opt/llvm/bin/clang++ --std=c++20
+GCC=/opt/homebrew/opt/llvm/bin/clang++ --std=c++20 -fopenmp
 CC=$(GCC) -g -c
 
 OFILES=out/world.o out/grid.o out/kernel.o out/vec2.o out/parse_input.o out/iisph.o out/physics.o
@@ -10,7 +10,7 @@ out/main: out/main.o out/world.o out/grid.o out/kernel.o out/vec2.o out/parse_in
 
 
 final: $(CFILES)
-	$(GCC) -fopenmp -O3 $(CFILES) -o out/main
+	$(GCC) -O3 $(CFILES) -o out/main
 
 test: out/world.o out/grid.o out/kernel.o out/vec2.o out/parse_input.o out/test.o
 	g++ out/test.o $(OFILES) -o out/test
@@ -44,7 +44,7 @@ out/parse_input.o: parse_input.cpp
 	$(CC) parse_input.cpp -o out/parse_input.o
 
 run:
-	./out/main
+	./out/main scenes/wells.txt --time 2
 
 clean:
 	rm -r out/

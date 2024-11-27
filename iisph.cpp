@@ -8,6 +8,7 @@
 
 double iisph_compute_time_step(World *w) {
   double max_vel_sq = 0.0;
+  #pragma omp parallel for reduction(max : max_vel_sq)
   for (Particle &p: w->particles) {
     max_vel_sq = std::max(max_vel_sq, norm_square(p.vel));
   }
@@ -33,50 +34,57 @@ std::unique_ptr<double[]> iisph_compute_pressure(double dt, World *w) {
   // Compute a_ii
   // particles with aii = 0 are excluded from computation
   std::unique_ptr<double[]> aii(new double[w->particles.size()]);
-  for (Particle& p: w->particles) {
-    if (p.boundary_particle) {
-      aii[p.idx] = 0;
-      continue;
-    }
-
-    Particle *pi = &p;
-    // Δt²     ∑ⱼ mⱼ  [-∑ₖ mₖ / ρᵢ² ∇W_{ik} + mᵢ / ρᵢ² ∇W_{ji} ] . ∇W_{ij}
-    // -Δt²/ρᵢ² ∑ⱼ mⱼ  [ ∑ₖ mₖ      ∇W_{ik} + mᵢ      ∇W_{ij} ] . ∇W_{ij}
-    // -Δt²/ρᵢ² ∑ⱼ mⱼ  [ mᵢ ∇W_{ij}    + ∑ₖ mₖ ∇W_{ik}  ] . ∇W_{ij}
-    //                                -- (inner sum) --
-    //               -------- ( middle term )  --------
-    //         (outer sum)
-
-    double outer_sum = 0;
-
-    vec2 inner_sum = {0};
-    for (Particle* pk: w->grid->get_neighbours(pi)) {
-      inner_sum += pk->mass * gradW(pi->pos, pk->pos);
-    }
-
-    for (Particle* pj: w->grid->get_neighbours(pi)) {
-      vec2 middle_term = pi->mass * gradW(pi->pos, pj->pos) + inner_sum;
-      outer_sum = outer_sum + pj->mass * dot(middle_term, gradW(pi->pos, pj->pos));
-    }
-
-    aii[pi->idx] = -dt2 / pow(pi->rho, 2) * outer_sum;
-  }
-
-  // Compute s_i
   std::unique_ptr<double[]> s(new double[w->particles.size()]);
-  double alpha = 0.01;
-  for (Particle& p: w->particles) {
-    if (!aii[p.idx]) continue;
-    double density_prediction = p.rho + dt * density_derivative(w, &p);
-    double density_correction = alpha * std::min(0.0, (w->rho_0 - density_prediction));
-    double velocity_correction =  dt * w->rho_0 * velocity_divergence(w, &p);
-    s[p.idx] = density_correction + velocity_correction;
-  }
-
-  // Initialize P_i = 0
   std::unique_ptr<double[]> P(new double[w->particles.size()]);
-  for (int i = 0; i < w->particles.size(); i++) {
-    P[i] = 0;
+
+#pragma omp parallel
+  {
+#pragma omp for nowait
+    for (Particle& p: w->particles) {
+      if (p.boundary_particle) {
+        aii[p.idx] = 0;
+        continue;
+      }
+
+      Particle *pi = &p;
+      // Δt²     ∑ⱼ mⱼ  [-∑ₖ mₖ / ρᵢ² ∇W_{ik} + mᵢ / ρᵢ² ∇W_{ji} ] . ∇W_{ij}
+      // -Δt²/ρᵢ² ∑ⱼ mⱼ  [ ∑ₖ mₖ      ∇W_{ik} + mᵢ      ∇W_{ij} ] . ∇W_{ij}
+      // -Δt²/ρᵢ² ∑ⱼ mⱼ  [ mᵢ ∇W_{ij}    + ∑ₖ mₖ ∇W_{ik}  ] . ∇W_{ij}
+      //                                -- (inner sum) --
+      //               -------- ( middle term )  --------
+      //         (outer sum)
+
+      double outer_sum = 0;
+
+      vec2 inner_sum = {0};
+      for (Particle* pk: w->grid->get_neighbours(pi)) {
+        inner_sum += pk->mass * gradW(pi->pos, pk->pos);
+      }
+
+      for (Particle* pj: w->grid->get_neighbours(pi)) {
+        vec2 middle_term = pi->mass * gradW(pi->pos, pj->pos) + inner_sum;
+        outer_sum = outer_sum + pj->mass * dot(middle_term, gradW(pi->pos, pj->pos));
+      }
+
+      aii[pi->idx] = -dt2 / pow(pi->rho, 2) * outer_sum;
+    }
+
+    // Compute s_i
+    double alpha = 0.01;
+#pragma omp for nowait
+    for (Particle& p: w->particles) {
+      if (!aii[p.idx]) continue;
+      double density_prediction = p.rho + dt * density_derivative(w, &p);
+      double density_correction = alpha * std::min(0.0, (w->rho_0 - density_prediction));
+      double velocity_correction =  dt * w->rho_0 * velocity_divergence(w, &p);
+      s[p.idx] = density_correction + velocity_correction;
+    }
+
+    // Initialize P_i = 0
+#pragma omp for
+    for (int i = 0; i < w->particles.size(); i++) {
+      P[i] = 0;
+    }
   }
 
   // Jacobi Iteration to solve
@@ -88,6 +96,7 @@ std::unique_ptr<double[]> iisph_compute_pressure(double dt, World *w) {
   // Initialize pressure acceleration
   std::unique_ptr<vec2[]> acc(new vec2[w->particles.size()]);
   int n_fluid = 0;
+  #pragma omp parallel for
   for (Particle &p: w->particles) {
     if (!aii[p.idx]) {
       acc[p.idx] = {0};
@@ -105,11 +114,13 @@ std::unique_ptr<double[]> iisph_compute_pressure(double dt, World *w) {
     error = 0.0;
     iters++;
     // Compute pressure acceleration (i.e. acc = -∇p/ρ)
+    #pragma omp parallel for
     for (Particle &p : w->particles) {
       if (!aii[p.idx]) continue;
       acc[p.idx] = pressure_acceleration(w, &p, P.get());
     }
 
+    #pragma omp parallel for
     for (Particle& p: w->particles) {
       if (!aii[p.idx]) continue;
       // Compute (∇²p)ᵢ = -∇(ρ acc)
@@ -140,6 +151,7 @@ double iisph_physics_update(World *w) {
 
   // Compute density
   w->timer_start("Compute Density");
+  #pragma omp parallel for
   for (Particle& p: w->particles) {
     p.rho = compute_density(w, &p);
   }
@@ -151,6 +163,7 @@ double iisph_physics_update(World *w) {
 
   // Apply non pressure forces
   // rho* Dv/Dt = nu * laplacian(v) + f_ext
+  #pragma omp parallel for
   for (Particle& p: w->particles) {
     if (!p.boundary_particle) {
       p.vel += dt * (w->viscous_acceleration(p) + w->external_acceleration(p));
@@ -166,6 +179,7 @@ double iisph_physics_update(World *w) {
   w->timer_start("Apply forces");
   // Apply pressure acceleration
   // Dv/Dt = -1/ρ ∇p
+  #pragma omp parallel for
   for (Particle& p: w->particles) {
     if (!p.boundary_particle) {
       p.vel += dt * pressure_acceleration(w, &p, P.get());
@@ -173,6 +187,7 @@ double iisph_physics_update(World *w) {
   }
 
   // Update position
+  #pragma omp parallel for
   for (Particle& p: w->particles) {
     if (!p.boundary_particle) {
       p.pos += dt * p.vel;

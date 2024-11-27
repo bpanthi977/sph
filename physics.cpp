@@ -1,5 +1,6 @@
 #include "types.h"
 #include "kernel.h"
+#include <cmath>
 #include <cassert>
 
 double compute_density(World *w, Particle *p) {

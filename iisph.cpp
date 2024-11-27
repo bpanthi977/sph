@@ -133,7 +133,7 @@ std::unique_ptr<double[]> iisph_compute_pressure(double dt, World *w) {
       double s_minus_Ap_i = s[p.idx] - dt2 * laplacian_i;
       assert(aii[p.idx] != 0);
       P[p.idx] = std::max(0.0, P[p.idx] + omega / aii[p.idx] * s_minus_Ap_i);
-      assert(!isnan(P[p.idx]));
+      assert(!std::isnan(P[p.idx]));
       error += abs(s_minus_Ap_i);
     }
 

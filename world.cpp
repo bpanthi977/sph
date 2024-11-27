@@ -62,7 +62,7 @@ World::World(std::vector<Particle> _particles, Algorithm _alg) {
 }
 
 void World::timer_start(std::string name) {
-  if (timings.contains(name)) {
+  if (timings.find(name) != timings.end()) {
     timings[name].start();
   } else {
     Timing t;
@@ -72,7 +72,7 @@ void World::timer_start(std::string name) {
 }
 
 void World::timer_end(std::string name) {
-  if (timings.contains(name)) {
+  if (timings.find(name) != timings.end()) {
     timings[name].end();
   } else {
     std::cerr << "Timer hasn't been created for " << name << std::endl;
@@ -118,7 +118,7 @@ void World::write_headers(std::ofstream &file) {
   uint8_t little_endian = (std::endian::native == std::endian::little) ? SIM_LITTLE_ENDIAN : 0;
   uint8_t flags = little_endian | SIM_MASS;
 
-  printf("Little Endian = %d\n", flags);
+  printf("Flags = %d\n", flags);
   file.write(reinterpret_cast<const char *>(&flags), sizeof(uint8_t));
 
   // Count of particles
@@ -151,9 +151,9 @@ void World::write_footers(std::ofstream &file) {
 void World::sanity_checks() {
   // Check for NaNs
   for (auto p: particles) {
-    assert(!isnan(p.pos.x));
-    assert(!isnan(p.pos.y));
-    assert(!isnan(p.vel.x));
-    assert(!isnan(p.vel.y));
+    assert(!std::isnan(p.pos.x));
+    assert(!std::isnan(p.pos.y));
+    assert(!std::isnan(p.vel.x));
+    assert(!std::isnan(p.vel.y));
   }
 }

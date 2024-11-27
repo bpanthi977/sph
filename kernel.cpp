@@ -1,5 +1,6 @@
 #include "vec2.h"
 #include "types.h"
+#include <cmath>
 #include <cassert>
 
 // Kernel Function

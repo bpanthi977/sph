@@ -3,6 +3,7 @@
 #include <cmath>
 #include <cstdint>
 #include <fstream>
+#include <bit>
 #include <iostream>
 #include <utility>
 #include <chrono>

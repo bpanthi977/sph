@@ -107,12 +107,9 @@
 
 (defun draw (draw-point set-color particles)
   (flet ((transform-x (x)
-           ;; x is in m
-           ;; take 500 pixels = 1m
            (truncate (+ *translate-x* (* *scale* x))))
          (transform-y (y)
            (truncate (- *translate-y* (* *scale* y)))))
-
     (loop for p across particles
           with max-pressure = (max 1 (reduce #'max particles :key #'particle-pressure :initial-value 0))
           with r = (truncate (* *scale* 1/2 +d+))
@@ -121,8 +118,9 @@
             (if (particle-boundary-p p)
                 (funcall set-color 0 0 0)
                 (funcall set-color
-                         (floor (* 255 (min 1 (/ (particle-pressure p)
-                                                 max-pressure))))
+                         (floor (* 255 #+nil(/ (log (1+ (particle-pressure p))) ;; log scale
+                                               (log (1+ max-pressure)))
+                                       (/ (particle-pressure p) max-pressure))) ;; linear scale
                          0 255))
           #+nil(draw-circle draw-point (transform-x x) (transform-y y) r)
           #+nil(draw-filled-circle draw-point (truncate (transform-x x)) (truncate (transform-y y)) r)
@@ -216,16 +214,15 @@
 (defmethod read-frame ((s simulation))
   (if (ended s)
       nil
-      (let ((has-next-frame (read-u8 s)))
+      (let ((has-next-frame (read-u8 s))
+            (read-pressure (not (= 0 (logand +sim-pressure+ (flags s))))))
         (if has-next-frame
             (progn
               (setf (world-time s) (read-single s))
               (loop for p across (particles s) do
                 (setf (particle-x p) (read-single s)
                       (particle-y p) (read-single s)
-                      (particle-pressure p) (if (= 0 (logand +sim-pressure+ (flags s)))
-                                                0.0
-                                                (read-single s))))
+                      (particle-pressure p) (if read-pressure (read-single s) 0.0)))
               (incf (frame-number s)))
             (setf (ended s) t))
         (not (ended s)))))
@@ -284,7 +281,7 @@
       (sdl-render win renderer sim)
       (gl-render win gl sim)))
 
-(defparameter *speed-up* 1.3)
+(defparameter *speed-up* 5)
 (defun main (&optional (file "./out/results.data"))
   (sdl2:with-init (:everything)
     ;; Initialize Graphics

@@ -105,12 +105,6 @@ void World::log(std::string param, double value) {
   logs.push_back(std::pair(param, value));
 }
 
-uint8_t SIM_LITTLE_ENDIAN = 0b00001;
-uint8_t SIM_MASS          = 0b00010;
-uint8_t SIM_BOUNDARY      = 0b00100;
-uint8_t SIM_PRESSURE      = 0b01000;
-uint8_t SIM_VELOCITY      = 0b10000;
-
 void write_single(std::ofstream &file, float s) {
   file.write(reinterpret_cast<char *>(&s), sizeof(float));
 }
@@ -120,13 +114,13 @@ void write_byte(std::ofstream &file, uint8_t byte) {
 }
 
 
-void World::write_headers(std::ofstream &file) {
+void World::write_headers(std::ofstream &file, uint8_t flags) {
   // Write endianness
   uint8_t little_endian = (std::endian::native == std::endian::little) ? SIM_LITTLE_ENDIAN : 0;
-  uint8_t flags = little_endian | SIM_MASS | SIM_BOUNDARY;
+  output_flags = (flags & 0b11111110) | little_endian;
 
-  printf("Flags = %d\n", flags);
-  write_byte(file, flags);
+  printf("Flags = %d\n", output_flags);
+  write_byte(file, output_flags);
 
   // Count of particles
   uint32_t count = particles.size();
@@ -134,13 +128,17 @@ void World::write_headers(std::ofstream &file) {
   file.write(reinterpret_cast<const char*>(&count), sizeof(uint32_t));
 
   // Mass of particles
-  for (Particle& p: particles) {
-    write_single(file, p.mass);
+  if (output_flags & SIM_MASS) {
+    for (Particle& p: particles) {
+      write_single(file, p.mass);
+    }
   }
 
   // Boundary or Not
-  for (Particle& p: particles) {
-    write_byte(file, p.boundary_particle);
+  if (output_flags & SIM_BOUNDARY) {
+    for (Particle& p: particles) {
+      write_byte(file, p.boundary_particle);
+    }
   }
 }
 
@@ -148,10 +146,11 @@ void World::write_frame(std::ofstream &file) {
   uint8_t next_frame = 1;
   file.write(reinterpret_cast<char *>(&next_frame), sizeof(uint8_t));
   write_single(file, time);
+  double *P = alg->get_pressure();
   for (auto &p : particles) {
     write_single(file, p.pos.x);
     write_single(file, p.pos.y);
-    //write_single(file, p.pressure);
+    if (output_flags & SIM_PRESSURE) write_single(file, P[p.idx]);
   }
 }
 

@@ -43,6 +43,7 @@ typedef struct {
   bool data_file_out;
   bool terminal_render;
   int parsing_scale;
+  bool save_pressure;
 } Params;
 
 std::string get_arg(std::vector<std::string> args, std::string param) {
@@ -65,14 +66,15 @@ void print_help() {
 
   cout << "SPH Fuild Simulator" << endl;
   cout << "simulator <input_filename> [optional parameters]" << endl << endl;
-  cout << "--output    Path to simulation result ouptut file" << endl;
-  cout << "--time      Target time for simulation" << endl;
-  cout << "--iters     Target iterations of physics update (default 200)" << endl;
-  cout << "             Not used if --time is provided" << endl;
-  cout << "--no-render Disable rendering to terminal" << endl;
-  cout << "--no-output Don't save results to file" << endl;
-  cout << "--scale     Scale to use for Input file" << endl;
-  cout << "--help   Prints this help message." << endl;
+  cout << "--output F   Path to simulation result ouptut file" << endl;
+  cout << "--time   N   Target time for simulation" << endl;
+  cout << "--iters  N   Target iterations of physics update (default 200)" << endl;
+  cout << "              Not used if --time is provided" << endl;
+  cout << "--no-render  Disable rendering to terminal" << endl;
+  cout << "--no-output  Don't save results to file" << endl;
+  cout << "--scale  N   Scale to use for Input file" << endl;
+  cout << "--pressure   Save pressure values to output file" << endl;
+  cout << "--help       Prints this help message." << endl;
 }
 
 Params parse_args(int argc, char** argv) {
@@ -135,6 +137,12 @@ Params parse_args(int argc, char** argv) {
     params.data_file_out = true;
   }
 
+  if (find_arg(args, "--pressure")) {
+    params.save_pressure = true;
+  } else {
+    params.save_pressure = false;
+  }
+
   return params;
 }
 
@@ -152,7 +160,7 @@ int main(int argc, char** argv) {
       std::cerr << "Couldn't opern file to save state  file: " << params.output_filename << std::endl;
       exit(1);
     }
-    world->write_headers(file);
+    world->write_headers(file, SIM_MASS | SIM_BOUNDARY | ((params.save_pressure ? SIM_PRESSURE : 0)));
   }
 
   // Run simulation

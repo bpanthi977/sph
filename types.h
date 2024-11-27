@@ -119,7 +119,14 @@ public:
   void end();
 };
 
+const uint8_t SIM_LITTLE_ENDIAN = 0b00001;
+const uint8_t SIM_MASS          = 0b00010;
+const uint8_t SIM_BOUNDARY      = 0b00100;
+const uint8_t SIM_PRESSURE      = 0b01000;
+const uint8_t SIM_VELOCITY      = 0b10000;
+
 class World {
+  uint8_t output_flags;
 
 public:
   double rho_0 = 1000.0;
@@ -142,7 +149,7 @@ public:
   void timer_end(std::string name);
 
   // Save to file
-  void write_headers(std::ofstream &file);
+  void write_headers(std::ofstream &file, uint8_t output_flags);
   void write_frame(std::ofstream &file);
   void write_footers(std::ofstream &file);
 

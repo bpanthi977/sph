@@ -49,6 +49,57 @@
               (t
                (incf err (* 2 (+ 3 (* 2 y))))))))))
 
+(defun fill-circle (probe-point fill-point cx cy r)
+  (loop for y from (- cy r) to (+ cy r) by 1
+        for del-x = 0 do
+        (loop until (funcall probe-point (+ cx del-x) y)
+                do
+                   (funcall fill-point (+ cx del-x) y)
+                   (funcall fill-point (- cx del-x) y)
+                   (incf del-x))))
+
+(defparameter *circles* (make-hash-table))
+(defun get-filled-circle% (r)
+  (let ((arr (make-array (list (1+ (* 2 r)) (1+ (* 2 r))) :initial-element nil)))
+    (draw-circle (lambda (x y)
+                   (setf (aref arr y x) t))
+                 r r r)
+    (fill-circle (lambda (x y)
+                   (eql (aref arr y x) t))
+                 (lambda (x y)
+                   (setf (aref arr y x) t))
+                 r r r)
+    arr))
+
+(defun get-filled-circle (r)
+  (or (gethash r *circles*)
+      (setf (gethash r *circles*) (get-filled-circle% r))))
+
+(defun draw-filled-circle (draw-point cx cy r)
+  (let ((arr (get-filled-circle r)))
+    (loop for x from 0 to (* 2 r) do
+          (loop for y from 0 to (* 2 r) do
+            (if (aref arr x y)
+                (funcall draw-point
+                         (+ cx (- r) x)
+                         (+ cy (- r) y)))))))
+
+(defun draw-filled-rect (draw-point cx cy r)
+  (loop for x from 0 to (* 2 r) do
+    (loop for y from 0 to (* 2 r) do
+      (funcall draw-point
+               (+ cx (- r) x)
+               (+ cy (- r) y)))))
+
+
+#+nil(defun test-circle ()
+  (let ((arr (get-filled-circle 25)))
+    (with-output-to-string (str)
+      (loop for y from 0 below 51 do
+        (loop for x from 0 below 51 do
+          (write-char (if (aref arr x y) #\. #\Space) str))
+        (write-char #\Newline str)))))
+
 (defparameter *translate-x* 200)
 (defparameter *translate-y* 200)
 (defparameter *scale* 200)
@@ -70,7 +121,9 @@
                      (floor (* 255 (min 1 (/ (particle-pressure p)
                                              max-pressure))))
                      0 255)
-            (draw-circle draw-point (transform-x x) (transform-y y) r))))
+          #+nil(draw-circle draw-point (transform-x x) (transform-y y) r)
+          #+nil(draw-filled-circle draw-point (truncate (transform-x x)) (truncate (transform-y y)) r)
+                 (draw-filled-rect draw-point (truncate (transform-x x)) (truncate (transform-y y)) r))))
 
 (defconstant +SIM-LITTLE-ENDIAN+     #b00001)
 (defconstant +SIM-MASS+              #b00010)
@@ -176,9 +229,10 @@
        (close-simulation ,simulation))))
 
 (defun gl-render (win gl sim)
+  (declare (ignorable win gl sim))
   (gl:clear :color-buffer)
   (multiple-value-bind (width height) (sdl2:get-window-size win)
-    (let ((buffer (make-array (list height width 3) :element-type '(unsigned-byte 8)))
+    (let ((buffer (make-array (list height width 3) :element-type '(unsigned-byte 8) :initial-element 255))
           (r 0) (g 0) (b 0))
       (flet ((draw-point (x y r g b)
                (setf (aref buffer y x 0) r
@@ -203,6 +257,7 @@
   (sdl2:gl-swap-window win))
 
 (defun sdl-render (win renderer sim)
+  (declare (ignorable win))
   ;; Clear screen
   (sdl2:set-render-draw-color renderer 255 255 255 255)
   (sdl2:render-clear renderer)
@@ -220,6 +275,7 @@
       (sdl-render win renderer sim)
       (gl-render win gl sim)))
 
+(defparameter *speed-up* 1.3)
 (defun main (&optional (file "./out/results.data"))
   (sdl2:with-init (:everything)
     ;; Initialize Graphics
@@ -227,7 +283,7 @@
                            :title "Physics simulation"
                            :flags (list sdl2-ffi:+sdl-window-resizable+ sdl2-ffi:+sdl-window-opengl+))
       (sdl2:with-gl-context (gl win)
-        ;;(sdl2:with-renderer (renderer win)
+      ;;(sdl2:with-renderer (renderer win)
         (sdl2:gl-make-current win gl)
         (with-simulation-file (file sim)
           (let ((render-time-start (get-internal-real-time))
@@ -281,7 +337,7 @@
                ;; Read frames
                (loop while
                      (and auto-play
-                          (< (world-time sim)
+                          (< (* *speed-up* (world-time sim))
                              (/ (- (get-internal-real-time) render-time-start)
                                 internal-time-units-per-second))
                           (not (ended sim)))
@@ -289,7 +345,9 @@
                (unless (eql (world-time sim) last-frame)
                  (format t "T=~a (~f)~%" (world-time sim) (/ (- (get-internal-real-time) render-time-start)
                                                              internal-time-units-per-second))
-                 (render win sim nil gl)
+                 (render win sim
+                         (and (boundp 'renderer) (symbol-value 'renderer))
+                         (and (boundp 'gl) (symbol-value 'gl)))
                  (setf last-frame (world-time sim)))
                (if (ended sim)
                    (sleep 0.1))))))))))

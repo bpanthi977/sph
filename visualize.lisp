@@ -331,9 +331,9 @@
                    (#.sdl2-ffi:+sdl-scancode-down+
                     (decf *translate-y* -25))
                    (#.sdl2-ffi:+sdl-scancode-left+
-                    (decf *translate-x* -25))
+                    (decf *translate-x* +25))
                    (#.sdl2-ffi:+sdl-scancode-right+
-                    (decf *translate-x* 25))
+                    (decf *translate-x* -25))
                    (#.sdl2-ffi:+sdl-scancode-minus+
                     (setf *scale* (* *scale* 0.9)))
                    (#.sdl2-ffi:+sdl-scancode-equals+

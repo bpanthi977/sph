@@ -95,11 +95,6 @@ Params parse_args(int argc, char** argv) {
     exit(0);
   }
 
-  params.output_filename = get_arg(args, "--output");
-  if (params.output_filename == "") {
-    params.output_filename = params.input_filename + ".data";
-  }
-
   std::string iters_str = get_arg(args, "--iters");
   if (iters_str == "") {
     params.iters = -1;
@@ -142,6 +137,18 @@ Params parse_args(int argc, char** argv) {
   } else {
     params.save_pressure = false;
   }
+
+  params.output_filename = get_arg(args, "--output");
+  if (params.output_filename == "") {
+    std::string scale_str = "";
+    if (params.parsing_scale != 1) {
+      scale_str = "_" + std::to_string(params.parsing_scale);
+    }
+    std::string pressure_str = "";
+    if (params.save_pressure) pressure_str = "_p";
+    params.output_filename = params.input_filename + scale_str + pressure_str +".data";
+  }
+
 
   return params;
 }

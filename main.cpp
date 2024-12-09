@@ -40,6 +40,7 @@ typedef struct {
   std::string output_filename;
   int iters;
   double target_time;
+  double save_interval;
   bool data_file_out;
   bool terminal_render;
   int parsing_scale;
@@ -66,15 +67,16 @@ void print_help() {
 
   cout << "SPH Fuild Simulator" << endl;
   cout << "simulator <input_filename> [optional parameters]" << endl << endl;
-  cout << "--output F   Path to simulation result ouptut file" << endl;
-  cout << "--time   N   Target time for simulation" << endl;
-  cout << "--iters  N   Target iterations of physics update (default 200)" << endl;
-  cout << "              Not used if --time is provided" << endl;
-  cout << "--no-render  Disable rendering to terminal" << endl;
-  cout << "--no-output  Don't save results to file" << endl;
-  cout << "--scale  N   Scale to use for Input file" << endl;
-  cout << "--pressure   Save pressure values to output file" << endl;
-  cout << "--help       Prints this help message." << endl;
+  cout << "--output       F   Path to simulation result ouptut file" << endl;
+  cout << "--save-delta   N   Save the world state after at least N seconds " << endl;
+  cout << "--time         N   Target time for simulation" << endl;
+  cout << "--iters        N   Target iterations of physics update (default 200)" << endl;
+  cout << "                     Not used if --time is provided" << endl;
+  cout << "--no-render        Disable rendering to terminal" << endl;
+  cout << "--no-output        Don't save results to file" << endl;
+  cout << "--scale        N   Scale to use for Input file" << endl;
+  cout << "--pressure         Save pressure values to output file" << endl;
+  cout << "--help             Prints this help message." << endl;
 }
 
 Params parse_args(int argc, char** argv) {
@@ -108,6 +110,14 @@ Params parse_args(int argc, char** argv) {
   } else {
     params.target_time = std::stod(time_str);
   }
+
+  std::string save_delta = get_arg(args, "--save-delta");
+  if (save_delta == "") {
+    params.save_interval = 0;
+  } else {
+    params.save_interval = std::stod(save_delta);
+  }
+
 
   if (iters_str == "" && time_str == "") {
     params.iters = 200;
@@ -172,12 +182,16 @@ int main(int argc, char** argv) {
 
   // Run simulation
   int iters = 0;
+  double t = world->time;
   while ((params.iters < 0 || (iters < params.iters)) &&
          (params.target_time < 0 || world->time < params.target_time)) {
     iters++;
     world->physics_update();
 
-    if (params.terminal_render) {
+    bool render_interval_ok = (world->time - t) > params.save_interval;
+    if (render_interval_ok) t = world->time;
+
+    if (render_interval_ok && params.terminal_render) {
       world->timer_start("Render");
       render_to_terminal(world);
       world->timer_end("Render");
@@ -186,7 +200,7 @@ int main(int argc, char** argv) {
     std::chrono::duration duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_point);
     printf("[Iters: %d/%d] [Time: %.4fs/%.2f] [Wall Time: %.4fs]\n", iters, params.iters, world->time, params.target_time, (double) duration.count() / 1000);
 
-    if (params.data_file_out) {
+    if (render_interval_ok && params.data_file_out) {
       world->timer_start("Save Frame");
       world->write_frame(file);
       world->timer_start("Save Frame");

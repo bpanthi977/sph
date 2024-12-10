@@ -1,4 +1,4 @@
-.PHONY: run clean test final
+.PHONY: run clean test fast
 GCC=/opt/homebrew/opt/llvm/bin/clang++ --std=c++2a -fopenmp
 # GCC=g++ --std=c++2a
 CC=$(GCC) -g -c
@@ -10,7 +10,7 @@ out/main: out/main.o out/world.o out/grid.o out/kernel.o out/vec2.o out/parse_in
 	$(GCC) out/main.o $(OFILES) -o out/main
 
 
-final: $(CFILES)
+fast: $(CFILES)
 	$(GCC) -O3 $(CFILES) -o out/main
 
 test: out/world.o out/grid.o out/kernel.o out/vec2.o out/parse_input.o out/test.o

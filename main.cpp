@@ -9,6 +9,7 @@
 #include "types.h"
 #include "kernel.h"
 #include "iisph.h"
+#include <omp.h>
 
 void setup_initial_mass(World *world) {
   // Compute initial mass
@@ -28,7 +29,11 @@ World *initialize_world(std::string filename, int parsing_scale) {
   World *w = new World(particles, algorithm);
   int fluid_cout = std::count_if(w->particles.begin(), w->particles.end(), [](Particle& p) { return !p.boundary_particle; });
   printf("World loaded [%zu particles] [%d Fluid] \n", w->particles.size(), fluid_cout);
-
+  #pragma omp parallel
+  {
+    #pragma omp single
+    printf("OMP_NUM_THREADS=%d\n", omp_get_num_threads());
+  }
   w->grid->build();
   setup_initial_mass(w);
   w->alg->initialize(w);

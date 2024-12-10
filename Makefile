@@ -6,12 +6,12 @@ CC=$(GCC) -g -c
 OFILES=out/world.o out/grid.o out/kernel.o out/vec2.o out/parse_input.o out/iisph.o out/physics.o
 CFILES=world.cpp grid.cpp kernel.cpp vec2.cpp parse_input.cpp iisph.cpp physics.cpp main.cpp
 
-out/main: out/main.o out/world.o out/grid.o out/kernel.o out/vec2.o out/parse_input.o out/iisph.o out/physics.o
-	$(GCC) out/main.o $(OFILES) -o out/main
+out/simulator: out/main.o out/world.o out/grid.o out/kernel.o out/vec2.o out/parse_input.o out/iisph.o out/physics.o
+	$(GCC) out/main.o $(OFILES) -o out/simulator
 
 
 fast: $(CFILES)
-	$(GCC) -O3 $(CFILES) -o out/main
+	$(GCC) -O3 $(CFILES) -o out/simulator
 
 test: out/world.o out/grid.o out/kernel.o out/vec2.o out/parse_input.o out/test.o
 	g++ out/test.o $(OFILES) -o out/test
@@ -45,7 +45,7 @@ out/parse_input.o: parse_input.cpp
 	$(CC) parse_input.cpp -o out/parse_input.o
 
 run:
-	./out/main scenes/wells.txt --time 2
+	./out/simulator scenes/wells.txt --time 2
 
 clean:
 	rm -r out/

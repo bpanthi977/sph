@@ -106,17 +106,5 @@ void render_to_terminal(World *w) {
     printf("\n");
   }
 
-  for (auto log: w->logs) {
-    printf("[%s %f] ", log.first.c_str(), log.second);
-  }
-
-  for (auto log: w->timings) {
-    Timing timing = log.second;
-    if (timing.get_mean() >= 1000) {
-      printf("[%s %4.1fms(± %.0f)] ", log.first.c_str(), (double)timing.get_current() / 1000, (double) timing.get_std() / 1000);
-    } else {
-      printf("[%s %4lluus (± %.0f)] ", log.first.c_str(), log.second.get_current(), log.second.get_std());
-      }
-  }
   printf("\n");
 }

@@ -105,6 +105,25 @@ void World::log(std::string param, double value) {
   logs.push_back(std::pair(param, value));
 }
 
+void World::print_logs() {
+  for (auto log: logs) {
+    printf("[%s %f] ", log.first.c_str(), log.second);
+  }
+  if (logs.size() > 0) printf("\n");
+}
+
+void World::print_timings() {
+  for (auto log: timings) {
+    Timing timing = log.second;
+    if (timing.get_mean() >= 1000) {
+      printf("[%s %4.1fms(± %.0f)] ", log.first.c_str(), (double)timing.get_current() / 1000, (double) timing.get_std() / 1000);
+    } else {
+      printf("[%s %4lluus (± %.0f)] ", log.first.c_str(), log.second.get_current(), log.second.get_std());
+    }
+  }
+  if (timings.size() > 0) printf("\n");
+}
+
 void write_single(std::ofstream &file, float s) {
   file.write(reinterpret_cast<char *>(&s), sizeof(float));
 }

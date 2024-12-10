@@ -147,6 +147,9 @@ public:
   void log(std::string param, double value);
   void timer_start(std::string name);
   void timer_end(std::string name);
+  void print_logs();
+  void print_timings();
+
 
   // Save to file
   void write_headers(std::ofstream &file, uint8_t output_flags);

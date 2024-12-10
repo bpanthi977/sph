@@ -1,6 +1,6 @@
 .PHONY: run clean test fast
 GCC=/opt/homebrew/opt/llvm/bin/clang++ --std=c++2a -fopenmp
-# GCC=g++ --std=c++2a
+# GCC=g++ --std=c++2a -fopenmp
 CC=$(GCC) -g -c
 
 OFILES=out/world.o out/grid.o out/kernel.o out/vec2.o out/parse_input.o out/iisph.o out/physics.o

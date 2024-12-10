@@ -26,7 +26,8 @@ World *initialize_world(std::string filename, int parsing_scale) {
   std::vector<Particle> particles = parse_input_file(filename, parsing_scale);
   IISPH *algorithm = new IISPH();
   World *w = new World(particles, algorithm);
-  printf("World loaded [%zu particles]\n", w->particles.size());
+  int fluid_cout = std::count_if(w->particles.begin(), w->particles.end(), [](Particle& p) { return !p.boundary_particle; });
+  printf("World loaded [%zu particles] [%d Fluid] \n", w->particles.size(), fluid_cout);
 
   w->grid->build();
   setup_initial_mass(w);

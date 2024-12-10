@@ -66,7 +66,6 @@ GridBox *GridHashMap::find_grid(GridId grid_id) {
 }
 
 Grid::Grid(std::vector<Particle> *ps): grid_hash_map(10 * ps->size()) {
-  printf("Particles size %zu\n", ps->size());
   particles = ps;
 }
 

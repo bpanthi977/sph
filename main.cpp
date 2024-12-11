@@ -215,6 +215,12 @@ int main(int argc, char** argv) {
       world->timer_start("Save Frame");
     }
   }
+
+  if (params.save_interval > 0) {
+    std::chrono::duration duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_point);
+    printf("[Iters: %d/%d] [Time: %.4fs/%.2f] [Wall Time: %.4fs]\n", iters, params.iters, world->time, params.target_time, (double) duration.count() / 1000);
+  }
+
   // Close output file
   if (params.data_file_out) world->write_footers(file);
   file.close();

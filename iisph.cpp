@@ -96,7 +96,7 @@ void iisph_compute_pressure(double dt, World *w, double *P) {
   // Initialize pressure acceleration
   std::unique_ptr<vec2[]> acc(new vec2[w->particles.size()]);
   int n_fluid = 0;
-  #pragma omp parallel for
+  #pragma omp parallel for reduction(+: n_fluid)
   for (Particle &p: w->particles) {
     if (!aii[p.idx]) {
       acc[p.idx] = {0};

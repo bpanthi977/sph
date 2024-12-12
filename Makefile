@@ -45,7 +45,7 @@ out/parse_input.o: parse_input.cpp
 	$(CC) parse_input.cpp -o out/parse_input.o
 
 run:
-	./out/simulator scenes/wells.txt --time 2
+	./out/simulator renders/Fluid\ Simulator.txt --time 2
 
 clean:
 	rm -r out/
